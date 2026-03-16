@@ -45,6 +45,40 @@ const BRAND_DOMAINS = [
 ];
 
 /**
+ * Groups of related domains owned by the same company.
+ * If a display name matches brand X and the sender is from a related domain, it's legitimate.
+ */
+const BRAND_GROUPS = [
+  ['google.com', 'youtube.com', 'googlemail.com'],
+  ['microsoft.com', 'outlook.com', 'live.com', 'hotmail.com', 'office.com', 'office365.com'],
+  ['apple.com', 'icloud.com', 'me.com', 'mac.com'],
+  ['meta.com', 'facebook.com', 'instagram.com', 'whatsapp.com'],
+  ['amazon.com', 'amazonaws.com'],
+];
+
+let _relatedDomainCache = null;
+
+/**
+ * Checks if two root domains belong to the same brand group.
+ * @param {string} brandRoot
+ * @param {string} senderRoot
+ * @returns {boolean}
+ */
+function isRelatedBrandDomain(brandRoot, senderRoot) {
+  if (!_relatedDomainCache) {
+    _relatedDomainCache = {};
+    for (const group of BRAND_GROUPS) {
+      const roots = group.map(d => extractRootDomain(d));
+      for (const root of roots) {
+        _relatedDomainCache[root] = roots;
+      }
+    }
+  }
+  const related = _relatedDomainCache[brandRoot];
+  return related ? related.includes(senderRoot) : false;
+}
+
+/**
  * Extracts the bare brand name from a domain (e.g., "paypal.com" → "paypal").
  * @param {string} domain
  * @returns {string}

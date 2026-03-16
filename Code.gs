@@ -122,6 +122,64 @@ function uninstall() {
 }
 
 /**
+ * Adds a sender domain or email address to the whitelist.
+ * Run from the script editor: addToWhitelist('example.com')
+ * @param {string} domainOrEmail - e.g., "workspace.studio" or "noreply@alerts.example.com"
+ */
+function addToWhitelist(domainOrEmail) {
+  if (!domainOrEmail) {
+    Logger.log('Usage: addToWhitelist("domain.com") or addToWhitelist("user@domain.com")');
+    return;
+  }
+  const entry = domainOrEmail.trim().toLowerCase();
+  const whitelist = getWhitelist_();
+  if (whitelist.includes(entry)) {
+    Logger.log('Already whitelisted: ' + entry);
+    return;
+  }
+  whitelist.push(entry);
+  PropertiesService.getScriptProperties().setProperty(
+    WHITELIST_PROPERTY_KEY, JSON.stringify(whitelist)
+  );
+  Logger.log('Added to whitelist: ' + entry);
+}
+
+/**
+ * Removes a sender domain or email address from the whitelist.
+ * @param {string} domainOrEmail
+ */
+function removeFromWhitelist(domainOrEmail) {
+  if (!domainOrEmail) return;
+  const entry = domainOrEmail.trim().toLowerCase();
+  const whitelist = getWhitelist_();
+  const idx = whitelist.indexOf(entry);
+  if (idx === -1) {
+    Logger.log('Not in whitelist: ' + entry);
+    return;
+  }
+  whitelist.splice(idx, 1);
+  PropertiesService.getScriptProperties().setProperty(
+    WHITELIST_PROPERTY_KEY, JSON.stringify(whitelist)
+  );
+  Logger.log('Removed from whitelist: ' + entry);
+}
+
+/**
+ * Shows the current sender whitelist in the log.
+ */
+function showWhitelist() {
+  const whitelist = getWhitelist_();
+  if (whitelist.length === 0) {
+    Logger.log('Whitelist is empty. Use addToWhitelist("domain.com") to add entries.');
+    return;
+  }
+  Logger.log('Sender whitelist (' + whitelist.length + ' entries):');
+  for (const entry of whitelist) {
+    Logger.log('  - ' + entry);
+  }
+}
+
+/**
  * Test function with hard-coded spoof examples.
  * Run from the script editor to verify detection logic.
  */
@@ -172,6 +230,26 @@ function testDetection() {
       from: '"Amazon.com" <ship-confirm@ship.amazon.com>',
       expectSpoof: false,
     },
+    {
+      name: 'Google display name from YouTube — related domain',
+      from: '"Google" <noreply@youtube.com>',
+      expectSpoof: false,
+    },
+    {
+      name: 'Microsoft display name from Outlook — related domain',
+      from: '"Microsoft Account" <noreply@outlook.com>',
+      expectSpoof: false,
+    },
+    {
+      name: 'Meta display name from Instagram — related domain',
+      from: '"Meta" <security@instagram.com>',
+      expectSpoof: false,
+    },
+    {
+      name: 'Google Search Console — legitimate',
+      from: '"Google Search Console" <sc-noreply@google.com>',
+      expectSpoof: false,
+    },
   ];
 
   let passed = 0;
@@ -187,7 +265,7 @@ function testDetection() {
       const emailDomain = sender.email.split('@')[1];
       const actualRoot = extractRootDomain(emailDomain);
       const brandRoot = extractRootDomain(brandMatch.domain);
-      isSpoof = actualRoot !== brandRoot;
+      isSpoof = actualRoot !== brandRoot && !isRelatedBrandDomain(brandRoot, actualRoot);
     }
 
     const status = isSpoof === tc.expectSpoof ? 'PASS' : 'FAIL';
