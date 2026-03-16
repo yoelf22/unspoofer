@@ -1,0 +1,6 @@
+README.md
+.git/**
+.git
+node_modules/**
+.claude/**
+.gitignore
