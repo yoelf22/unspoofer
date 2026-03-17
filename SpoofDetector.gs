@@ -14,6 +14,15 @@ const SUSPICIOUS_PLATFORMS = [
 ];
 
 /**
+ * DKIM selectors used by suspicious platforms.
+ * Catches custom-domain emails sent through these platforms (e.g., Firebase with a
+ * registered domain instead of *.firebaseapp.com).
+ */
+const SUSPICIOUS_DKIM_SELECTORS = [
+  { selector: 'firebase1', platform: 'firebase' },
+];
+
+/**
  * Checks if a sender domain is a subdomain of a known suspicious platform.
  * @param {string} emailDomain - e.g., "kriyiasahbi.firebaseapp.com"
  * @returns {string|null} The matched platform or null
@@ -27,6 +36,33 @@ function isSuspiciousPlatform(emailDomain) {
     }
   }
   return null;
+}
+
+/**
+ * Checks the raw message headers for DKIM selectors associated with suspicious platforms.
+ * This catches emails sent via platforms like Firebase using a custom domain
+ * (e.g., noreply@qgui777com.com with DKIM selector "firebase1").
+ * @param {GmailMessage} message
+ * @returns {string|null} The matched platform name or null
+ */
+function checkSuspiciousDkimSelector(message) {
+  try {
+    const raw = message.getRawContent();
+    // Only parse headers (everything before the first blank line)
+    const headerEnd = raw.indexOf('\r\n\r\n');
+    const headers = headerEnd > 0 ? raw.substring(0, headerEnd) : raw.substring(0, 8000);
+
+    for (const entry of SUSPICIOUS_DKIM_SELECTORS) {
+      // Match in DKIM-Signature (s=firebase1;) or Authentication-Results (header.s=firebase1)
+      const pattern = new RegExp('(?:header\\.s|\\bs)=' + entry.selector + '\\b');
+      if (pattern.test(headers)) {
+        return entry.platform;
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
@@ -149,6 +185,17 @@ function checkForSpoof(message) {
     result.brand = suspiciousPlatform;
     result.reason = 'Sent from suspicious platform: ' + suspiciousPlatform;
     result.details = 'From: ' + from + ' | Platform domain: ' + senderDomain;
+    return result;
+  }
+
+  // 3b. Check DKIM selector for suspicious platforms using custom domains
+  //     (e.g., Firebase with selector "firebase1" on a random domain)
+  const dkimPlatform = checkSuspiciousDkimSelector(message);
+  if (dkimPlatform) {
+    result.isSpoof = true;
+    result.brand = dkimPlatform;
+    result.reason = 'Sent via suspicious platform: ' + dkimPlatform + ' (custom domain)';
+    result.details = 'From: ' + from + ' | Sender domain: ' + senderDomain;
     return result;
   }
 

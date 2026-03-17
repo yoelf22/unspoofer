@@ -255,6 +255,14 @@ function testDetection() {
       from: '"Account Alert" <noreply@kriyiasahbi.firebaseapp.com>',
       expectSpoof: true,
     },
+    {
+      name: 'Firebase phishing — custom domain with firebase1 DKIM selector',
+      from: '"Account Update" <noreply@qgui777com.com>',
+      expectSpoof: true,
+      rawHeaders: 'DKIM-Signature: v=1; a=rsa-sha256; d=qgui777com.com; s=firebase1; b=abc\r\n' +
+        'Authentication-Results: mx.google.com; dkim=pass header.i=@qgui777com.com header.s=firebase1\r\n' +
+        '\r\n',
+    },
   ];
 
   let passed = 0;
@@ -271,7 +279,14 @@ function testDetection() {
       // Check suspicious platforms first
       if (isSuspiciousPlatform(emailDomain)) {
         isSpoof = true;
-      } else if (brandMatch) {
+      } else if (tc.rawHeaders) {
+        // Check DKIM selector for custom-domain platform abuse
+        const mockMsg = { getRawContent: () => tc.rawHeaders };
+        if (checkSuspiciousDkimSelector(mockMsg)) {
+          isSpoof = true;
+        }
+      }
+      if (!isSpoof && brandMatch) {
         const actualRoot = extractRootDomain(emailDomain);
         const brandRoot = extractRootDomain(brandMatch.domain);
         isSpoof = actualRoot !== brandRoot && !isRelatedBrandDomain(brandRoot, actualRoot);
