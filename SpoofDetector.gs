@@ -5,6 +5,31 @@
 const WHITELIST_PROPERTY_KEY = 'senderWhitelist';
 
 /**
+ * Platform domains commonly abused to send phishing emails.
+ * Emails from subdomains of these are flagged as suspicious.
+ */
+const SUSPICIOUS_PLATFORMS = [
+  'firebaseapp.com',
+  'appspot.com',
+];
+
+/**
+ * Checks if a sender domain is a subdomain of a known suspicious platform.
+ * @param {string} emailDomain - e.g., "kriyiasahbi.firebaseapp.com"
+ * @returns {string|null} The matched platform or null
+ */
+function isSuspiciousPlatform(emailDomain) {
+  if (!emailDomain) return null;
+  const domain = emailDomain.toLowerCase();
+  for (const platform of SUSPICIOUS_PLATFORMS) {
+    if (domain === platform || domain.endsWith('.' + platform)) {
+      return platform;
+    }
+  }
+  return null;
+}
+
+/**
  * Returns the sender whitelist from Script Properties.
  * @returns {string[]}
  */
@@ -116,31 +141,42 @@ function checkForSpoof(message) {
   // 2. Check sender whitelist
   if (isSenderWhitelisted(sender.email)) return result;
 
-  // 3. Normalize display name and look for brand match
+  // 3. Check if sender is from a suspicious platform (e.g., firebaseapp.com)
+  const senderDomain = sender.email.split('@')[1];
+  const suspiciousPlatform = isSuspiciousPlatform(senderDomain);
+  if (suspiciousPlatform) {
+    result.isSpoof = true;
+    result.brand = suspiciousPlatform;
+    result.reason = 'Sent from suspicious platform: ' + suspiciousPlatform;
+    result.details = 'From: ' + from + ' | Platform domain: ' + senderDomain;
+    return result;
+  }
+
+  // 4. Normalize display name and look for brand match
   const normalizedName = normalizeToAscii(sender.displayName);
   const brandMatch = findSpoofedBrand(normalizedName);
   if (!brandMatch) return result;
 
-  // 4. Extract domain from the actual email address
-  const emailDomain = sender.email.split('@')[1];
+  // 5. Extract domain from the actual email address
+  const emailDomain = senderDomain;
   if (!emailDomain) return result;
   const actualRoot = extractRootDomain(emailDomain);
 
-  // 5. Check if the actual sender domain matches the brand domain
+  // 6. Check if the actual sender domain matches the brand domain
   const brandRoot = extractRootDomain(brandMatch.domain);
   if (actualRoot === brandRoot) return result; // Legit — actual domain matches brand
 
-  // 6. Check if sender is a known related domain for this brand (e.g., YouTube ↔ Google)
+  // 7. Check if sender is a known related domain for this brand (e.g., YouTube ↔ Google)
   if (isRelatedBrandDomain(brandRoot, actualRoot)) return result;
 
-  // 7. Also extract domain from display name if present, and compare
+  // 8. Also extract domain from display name if present, and compare
   const impliedDomain = extractDomainFromDisplayName(sender.displayName);
   if (impliedDomain) {
     const impliedRoot = extractRootDomain(impliedDomain);
     if (impliedRoot === actualRoot) return result; // Display domain matches sender domain — OK
   }
 
-  // 8. Spoof detected
+  // 9. Spoof detected
   result.isSpoof = true;
   result.brand = brandMatch.brandName;
   result.reason = 'Display name impersonates ' + brandMatch.domain +

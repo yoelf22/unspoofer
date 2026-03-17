@@ -250,6 +250,11 @@ function testDetection() {
       from: '"Google Search Console" <sc-noreply@google.com>',
       expectSpoof: false,
     },
+    {
+      name: 'Firebase phishing — suspicious platform',
+      from: '"Account Alert" <noreply@kriyiasahbi.firebaseapp.com>',
+      expectSpoof: true,
+    },
   ];
 
   let passed = 0;
@@ -261,11 +266,16 @@ function testDetection() {
     const brandMatch = findSpoofedBrand(normalizedName);
 
     let isSpoof = false;
-    if (brandMatch && sender.email) {
+    if (sender.email) {
       const emailDomain = sender.email.split('@')[1];
-      const actualRoot = extractRootDomain(emailDomain);
-      const brandRoot = extractRootDomain(brandMatch.domain);
-      isSpoof = actualRoot !== brandRoot && !isRelatedBrandDomain(brandRoot, actualRoot);
+      // Check suspicious platforms first
+      if (isSuspiciousPlatform(emailDomain)) {
+        isSpoof = true;
+      } else if (brandMatch) {
+        const actualRoot = extractRootDomain(emailDomain);
+        const brandRoot = extractRootDomain(brandMatch.domain);
+        isSpoof = actualRoot !== brandRoot && !isRelatedBrandDomain(brandRoot, actualRoot);
+      }
     }
 
     const status = isSpoof === tc.expectSpoof ? 'PASS' : 'FAIL';
