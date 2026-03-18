@@ -174,7 +174,7 @@ function checkForSpoof(message) {
 
   // 1. Parse sender
   const sender = parseSender(from);
-  if (!sender.displayName || !sender.email) return result;
+  if (!sender.email) return result;
 
   // 2. Check sender whitelist
   if (isSenderWhitelisted(sender.email)) return result;
@@ -201,7 +201,8 @@ function checkForSpoof(message) {
     return result;
   }
 
-  // 4. Normalize display name and look for brand match
+  // 4. Normalize display name and look for brand match (requires display name)
+  if (!sender.displayName) return result;
   const normalizedName = normalizeToAscii(sender.displayName);
   const brandMatch = findSpoofedBrand(normalizedName);
   if (!brandMatch) return result;
