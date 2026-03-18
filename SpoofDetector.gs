@@ -20,6 +20,7 @@ const SUSPICIOUS_PLATFORMS = [
  */
 const SUSPICIOUS_DKIM_SELECTORS = [
   { selector: 'firebase1', platform: 'firebase' },
+  { selector: 'aliyun-', platform: 'alibaba cloud', prefix: true },
 ];
 
 /**
@@ -54,7 +55,8 @@ function checkSuspiciousDkimSelector(message) {
 
     for (const entry of SUSPICIOUS_DKIM_SELECTORS) {
       // Match in DKIM-Signature (s=firebase1;) or Authentication-Results (header.s=firebase1)
-      const pattern = new RegExp('(?:header\\.s|\\bs)=' + entry.selector + '\\b');
+      const suffix = entry.prefix ? '[a-z0-9-]*\\b' : '\\b';
+      const pattern = new RegExp('(?:header\\.s|\\bs)=' + entry.selector + suffix);
       if (pattern.test(headers)) {
         return entry.platform;
       }

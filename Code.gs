@@ -263,6 +263,14 @@ function testDetection() {
         'Authentication-Results: mx.google.com; dkim=pass header.i=@qgui777com.com header.s=firebase1\r\n' +
         '\r\n',
     },
+    {
+      name: 'Alibaba Cloud phishing — custom domain with aliyun DKIM selector',
+      from: '"Important Notice" <noreply@fa-netscher.de>',
+      expectSpoof: true,
+      rawHeaders: 'DKIM-Signature: v=1; a=rsa-sha256; d=fa-netscher.de; s=aliyun-ap-southeast-1; b=abc\r\n' +
+        'Authentication-Results: mx.google.com; dkim=pass header.i=@fa-netscher.de header.s=aliyun-ap-southeast-1\r\n' +
+        '\r\n',
+    },
   ];
 
   let passed = 0;
