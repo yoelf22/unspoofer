@@ -19,8 +19,8 @@ const SUSPICIOUS_PLATFORMS = [
  * registered domain instead of *.firebaseapp.com).
  */
 const SUSPICIOUS_DKIM_SELECTORS = [
-  { selector: 'firebase1', platform: 'firebase' },
-  { selector: 'aliyun-', platform: 'alibaba cloud', prefix: true },
+  { platform: 'firebase', pattern: /(?:header\.s|\bs)=firebase1\b/ },
+  { platform: 'alibaba cloud', pattern: /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/ },
 ];
 
 /**
@@ -51,33 +51,37 @@ function checkSuspiciousDkimSelector(message) {
     const raw = message.getRawContent();
     // Only parse headers (everything before the first blank line)
     const headerEnd = raw.indexOf('\r\n\r\n');
-    const headers = headerEnd > 0 ? raw.substring(0, headerEnd) : raw.substring(0, 8000);
+    if (headerEnd <= 0) return null;
+    const headers = raw.substring(0, headerEnd);
 
     for (const entry of SUSPICIOUS_DKIM_SELECTORS) {
-      // Match in DKIM-Signature (s=firebase1;) or Authentication-Results (header.s=firebase1)
-      const suffix = entry.prefix ? '[a-z0-9-]*\\b' : '\\b';
-      const pattern = new RegExp('(?:header\\.s|\\bs)=' + entry.selector + suffix);
-      if (pattern.test(headers)) {
+      if (entry.pattern.test(headers)) {
         return entry.platform;
       }
     }
     return null;
   } catch (e) {
+    Logger.log('DKIM selector check failed: ' + e.message);
     return null;
   }
 }
 
+/** @type {string[]|null} */
+let _whitelistCache = null;
+
 /**
- * Returns the sender whitelist from Script Properties.
+ * Returns the sender whitelist from Script Properties (cached per execution).
  * @returns {string[]}
  */
 function getWhitelist_() {
+  if (_whitelistCache !== null) return _whitelistCache;
   try {
     const raw = PropertiesService.getScriptProperties().getProperty(WHITELIST_PROPERTY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    _whitelistCache = raw ? JSON.parse(raw) : [];
   } catch (e) {
-    return [];
+    _whitelistCache = [];
   }
+  return _whitelistCache;
 }
 
 /**

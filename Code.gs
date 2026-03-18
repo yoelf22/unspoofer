@@ -277,31 +277,17 @@ function testDetection() {
   let failed = 0;
 
   for (const tc of testCases) {
+    // Build a mock GmailMessage that exercises the real checkForSpoof() code path
+    const mockMessage = {
+      getFrom: () => tc.from,
+      getRawContent: () => tc.rawHeaders || '',
+    };
+    const result = checkForSpoof(mockMessage);
+
     const sender = parseSender(tc.from);
     const normalizedName = normalizeToAscii(sender.displayName);
-    const brandMatch = findSpoofedBrand(normalizedName);
 
-    let isSpoof = false;
-    if (sender.email) {
-      const emailDomain = sender.email.split('@')[1];
-      // Check suspicious platforms first
-      if (isSuspiciousPlatform(emailDomain)) {
-        isSpoof = true;
-      } else if (tc.rawHeaders) {
-        // Check DKIM selector for custom-domain platform abuse
-        const mockMsg = { getRawContent: () => tc.rawHeaders };
-        if (checkSuspiciousDkimSelector(mockMsg)) {
-          isSpoof = true;
-        }
-      }
-      if (!isSpoof && brandMatch) {
-        const actualRoot = extractRootDomain(emailDomain);
-        const brandRoot = extractRootDomain(brandMatch.domain);
-        isSpoof = actualRoot !== brandRoot && !isRelatedBrandDomain(brandRoot, actualRoot);
-      }
-    }
-
-    const status = isSpoof === tc.expectSpoof ? 'PASS' : 'FAIL';
+    const status = result.isSpoof === tc.expectSpoof ? 'PASS' : 'FAIL';
     if (status === 'PASS') {
       passed++;
     } else {
@@ -311,8 +297,8 @@ function testDetection() {
     Logger.log(status + ': ' + tc.name);
     Logger.log('  From: ' + tc.from);
     Logger.log('  Normalized name: "' + normalizedName + '"');
-    Logger.log('  Brand match: ' + (brandMatch ? brandMatch.domain : 'none'));
-    Logger.log('  Detected as spoof: ' + isSpoof + ' (expected: ' + tc.expectSpoof + ')');
+    Logger.log('  Detected as spoof: ' + result.isSpoof + ' (expected: ' + tc.expectSpoof + ')');
+    if (result.isSpoof) Logger.log('  Reason: ' + result.reason);
     Logger.log('');
   }
 
