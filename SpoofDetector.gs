@@ -49,8 +49,10 @@ function isSuspiciousPlatform(emailDomain) {
 function checkSuspiciousDkimSelector(message) {
   try {
     const raw = message.getRawContent();
-    // Only parse headers (everything before the first blank line)
-    const headerEnd = raw.indexOf('\r\n\r\n');
+    // Only parse headers (everything before the first blank line).
+    // Handle both \r\n\r\n (RFC 2822) and \n\n (Gmail normalization).
+    let headerEnd = raw.indexOf('\r\n\r\n');
+    if (headerEnd <= 0) headerEnd = raw.indexOf('\n\n');
     if (headerEnd <= 0) return null;
     const headers = raw.substring(0, headerEnd);
 
