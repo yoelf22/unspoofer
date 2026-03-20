@@ -304,3 +304,70 @@ function testDetection() {
 
   Logger.log('Results: ' + passed + ' passed, ' + failed + ' failed out of ' + testCases.length + ' tests');
 }
+
+/**
+ * Diagnostic: find a recent suspicious email and log every step of DKIM detection.
+ * Run from the script editor to debug why DKIM checks may be failing.
+ */
+function debugDkim() {
+  const threads = GmailApp.search('in:inbox newer_than:3d', 0, 20);
+  Logger.log('Checking ' + threads.length + ' threads...');
+
+  for (const thread of threads) {
+    const messages = thread.getMessages();
+    for (const message of messages) {
+      const from = message.getFrom();
+      Logger.log('--- Message from: ' + from);
+
+      try {
+        const raw = message.getRawContent();
+        Logger.log('  Raw content length: ' + raw.length);
+        Logger.log('  First 200 chars: ' + raw.substring(0, 200));
+
+        const crlfEnd = raw.indexOf('\r\n\r\n');
+        const lfEnd = raw.indexOf('\n\n');
+        Logger.log('  \\r\\n\\r\\n at: ' + crlfEnd);
+        Logger.log('  \\n\\n at: ' + lfEnd);
+
+        let headerEnd = crlfEnd;
+        if (headerEnd <= 0) headerEnd = lfEnd;
+        if (headerEnd <= 0) {
+          Logger.log('  NO HEADER BOUNDARY FOUND');
+          continue;
+        }
+
+        const headers = raw.substring(0, headerEnd);
+        Logger.log('  Header length: ' + headers.length);
+
+        // Check for DKIM selectors
+        const firebaseMatch = /(?:header\.s|\bs)=firebase1\b/.test(headers);
+        const aliyunMatch = /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/.test(headers);
+        Logger.log('  Firebase selector match: ' + firebaseMatch);
+        Logger.log('  Aliyun selector match: ' + aliyunMatch);
+
+        // Also check via the real function
+        const dkimResult = checkSuspiciousDkimSelector(message);
+        Logger.log('  checkSuspiciousDkimSelector result: ' + dkimResult);
+
+        // Full spoof check
+        const spoofResult = checkForSpoof(message);
+        Logger.log('  checkForSpoof result: isSpoof=' + spoofResult.isSpoof +
+          ', reason=' + spoofResult.reason);
+      } catch (e) {
+        Logger.log('  ERROR: ' + e.message);
+      }
+      Logger.log('');
+    }
+  }
+}
+
+/**
+ * Clears the processed message cache and immediately re-scans.
+ * Use after deploying detection changes to re-check previously missed messages.
+ */
+function rescanInbox() {
+  Logger.log('Clearing processed message cache...');
+  clearProcessedCache();
+  Logger.log('Cache cleared. Starting fresh scan...');
+  scanInbox();
+}
