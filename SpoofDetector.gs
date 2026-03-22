@@ -49,35 +49,21 @@ function isSuspiciousPlatform(emailDomain) {
 function checkSuspiciousDkimSelector(message) {
   try {
     const raw = message.getRawContent();
-    Logger.log('  [DKIM debug] raw length=' + raw.length);
-
     // Only parse headers (everything before the first blank line).
     // Handle both \r\n\r\n (RFC 2822) and \n\n (Gmail normalization).
     let headerEnd = raw.indexOf('\r\n\r\n');
-    const lfEnd = raw.indexOf('\n\n');
-    Logger.log('  [DKIM debug] CRLF boundary=' + headerEnd + ', LF boundary=' + lfEnd);
-    if (headerEnd <= 0) headerEnd = lfEnd;
-    if (headerEnd <= 0) {
-      Logger.log('  [DKIM debug] No header boundary found');
-      return null;
-    }
+    if (headerEnd <= 0) headerEnd = raw.indexOf('\n\n');
+    if (headerEnd <= 0) return null;
     const headers = raw.substring(0, headerEnd);
-    Logger.log('  [DKIM debug] header length=' + headers.length);
-
-    // Log any s= values found in headers for diagnostics
-    const selectorMatches = headers.match(/\bs=[a-z0-9-]+/gi);
-    Logger.log('  [DKIM debug] s= values found: ' + JSON.stringify(selectorMatches));
 
     for (const entry of SUSPICIOUS_DKIM_SELECTORS) {
-      const matched = entry.pattern.test(headers);
-      Logger.log('  [DKIM debug] pattern ' + entry.pattern + ' matched=' + matched);
-      if (matched) {
+      if (entry.pattern.test(headers)) {
         return entry.platform;
       }
     }
     return null;
   } catch (e) {
-    Logger.log('  [DKIM debug] ERROR: ' + e.message);
+    Logger.log('DKIM selector check failed: ' + e.message);
     return null;
   }
 }
