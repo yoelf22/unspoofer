@@ -54,6 +54,7 @@ function scanInbox() {
   let spoofCount = 0;
   let scannedCount = 0;
   let skippedCount = 0;
+  const spoofDetails = []; // Collect for email summary
 
   try {
     const threads = GmailApp.search(SCAN_QUERY, 0, 100);
@@ -85,6 +86,14 @@ function scanInbox() {
           // Star the specific message
           message.star();
 
+          const sender = parseSender(message.getFrom());
+          spoofDetails.push({
+            subject: message.getSubject(),
+            email: sender.email,
+            displayName: sender.displayName,
+            reason: result.reason,
+          });
+
           spoofCount++;
           Logger.log('SPOOF DETECTED: ' + result.reason);
           Logger.log('  Details: ' + result.details);
@@ -98,9 +107,51 @@ function scanInbox() {
     flushCache();
   }
 
+  // Send email summary if spoofs were found
+  if (spoofDetails.length > 0) {
+    sendSpoofAlert_(spoofDetails);
+  }
+
   Logger.log('Scan complete. Scanned: ' + scannedCount +
     ', Skipped (cached): ' + skippedCount +
     ', Spoofs found: ' + spoofCount);
+}
+
+/**
+ * Sends an email alert with an HTML table summarizing detected spoofs.
+ * @param {Array<{subject: string, email: string, displayName: string, reason: string}>} spoofs
+ */
+function sendSpoofAlert_(spoofs) {
+  const recipient = Session.getActiveUser().getEmail();
+  if (!recipient) return;
+
+  const rows = spoofs.map(function(s) {
+    const esc = function(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    return '<tr>' +
+      '<td style="padding:8px;border:1px solid #ddd">' + esc(s.subject) + '</td>' +
+      '<td style="padding:8px;border:1px solid #ddd">' + esc(s.email) + '</td>' +
+      '<td style="padding:8px;border:1px solid #ddd">' + esc(s.displayName) + '</td>' +
+      '<td style="padding:8px;border:1px solid #ddd">' + esc(s.reason) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  const html = '<h2>Spoof Alert: ' + spoofs.length + ' suspicious message' +
+    (spoofs.length > 1 ? 's' : '') + ' detected</h2>' +
+    '<table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">' +
+    '<tr style="background:#f44336;color:white">' +
+    '<th style="padding:8px;border:1px solid #ddd;text-align:left">Subject</th>' +
+    '<th style="padding:8px;border:1px solid #ddd;text-align:left">Sender Email</th>' +
+    '<th style="padding:8px;border:1px solid #ddd;text-align:left">Display Name</th>' +
+    '<th style="padding:8px;border:1px solid #ddd;text-align:left">Reason</th>' +
+    '</tr>' + rows + '</table>' +
+    '<p style="color:#666;font-size:12px">Sent by Unspoofer. These messages have been labeled SPOOF-ALERT and starred in your inbox.</p>';
+
+  MailApp.sendEmail({
+    to: recipient,
+    subject: 'Spoof Alert: ' + spoofs.length + ' suspicious message' + (spoofs.length > 1 ? 's' : '') + ' found',
+    htmlBody: html,
+  });
+  Logger.log('Alert email sent to ' + recipient);
 }
 
 /**
