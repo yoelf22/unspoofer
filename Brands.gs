@@ -107,7 +107,7 @@ function findSpoofedBrand(normalizedDisplayName) {
   // Only match standalone-looking brand names (word boundary approximation)
   for (const domain of BRAND_DOMAINS) {
     const brand = extractBrandName(domain);
-    if (brand.length < 4) continue; // Skip short names like "x" to avoid false positives
+    if (brand.length < 2) continue; // Skip single-char names like "x" to avoid false positives
     const idx = normalizedDisplayName.indexOf(brand);
     if (idx !== -1) {
       // Basic word-boundary check: brand shouldn't be a substring of a longer word
