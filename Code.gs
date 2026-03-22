@@ -4,7 +4,7 @@
  */
 
 const LABEL_NAME = 'SPOOF-ALERT';
-const SCAN_QUERY = 'in:inbox newer_than:1d';
+const SCAN_QUERY = 'in:inbox newer_than:3d';
 const EXECUTION_TIME_LIMIT_MS = 5 * 60 * 1000; // 5 minutes (safety margin under 6-min limit)
 
 /**
