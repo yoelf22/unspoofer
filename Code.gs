@@ -472,9 +472,29 @@ function debugDkim() {
  * Run from script editor after changing the search query if needed.
  */
 function debugMessage() {
-  const threads = GmailApp.search('from:babyamerica.com newer_than:7d', 0, 5);
+  // Search broadly: anywhere (inbox, spam, trash), multiple terms
+  const searches = [
+    'from:babyamerica newer_than:7d',
+    'from:avacomornami newer_than:7d',
+    'from:fsgebaeudeservice newer_than:7d',
+    'from:fa-netscher newer_than:7d',
+    'in:spam newer_than:7d',
+  ];
+  var threads = [];
+  for (var i = 0; i < searches.length; i++) {
+    threads = GmailApp.search(searches[i], 0, 5);
+    if (threads.length > 0) {
+      Logger.log('Found with query: ' + searches[i]);
+      break;
+    }
+  }
   if (threads.length === 0) {
-    Logger.log('No messages found');
+    var recipient = getOwnerEmail_();
+    if (recipient) {
+      GmailApp.sendEmail(recipient, 'debugMessage: nothing found',
+        'Tried these searches:\n' + searches.join('\n') + '\n\nNo messages matched.');
+    }
+    Logger.log('No messages found with any search');
     return;
   }
   const message = threads[0].getMessages()[0];
