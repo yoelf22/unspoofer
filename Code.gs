@@ -559,4 +559,28 @@ function rescanInbox() {
   clearProcessedCache();
   Logger.log('Cache cleared. Starting fresh scan...');
   scanInbox();
+
+  // Also email a full report of what was scanned
+  const threads = GmailApp.search(SCAN_QUERY, 0, 100);
+  const lines = ['rescanInbox report — query: ' + SCAN_QUERY, ''];
+  let count = 0;
+  for (const thread of threads) {
+    const messages = thread.getMessages();
+    for (const message of messages) {
+      count++;
+      const from = message.getFrom();
+      const subject = message.getSubject();
+      const result = checkForSpoof(message);
+      lines.push(count + '. ' + (result.isSpoof ? 'SPOOF' : 'clean') +
+        ' | ' + from + ' | ' + subject +
+        (result.isSpoof ? ' | ' + result.reason : ''));
+    }
+  }
+  lines.push('');
+  lines.push('Total: ' + count + ' messages');
+
+  const recipient = getOwnerEmail_();
+  if (recipient) {
+    GmailApp.sendEmail(recipient, 'Unspoofer rescan report: ' + count + ' messages', lines.join('\n'));
+  }
 }
