@@ -323,9 +323,16 @@ function debugDkim() {
   const threads = GmailApp.search('in:inbox newer_than:3d', 0, 20);
   Logger.log('Checking ' + threads.length + ' threads...');
 
+  let totalMessages = 0;
+  let spoofCount = 0;
+  let dkimMatchCount = 0;
+  let noBoundaryCount = 0;
+  let errorCount = 0;
+
   for (const thread of threads) {
     const messages = thread.getMessages();
     for (const message of messages) {
+      totalMessages++;
       const from = message.getFrom();
       Logger.log('--- Message from: ' + from);
 
@@ -343,6 +350,7 @@ function debugDkim() {
         if (headerEnd <= 0) headerEnd = lfEnd;
         if (headerEnd <= 0) {
           Logger.log('  NO HEADER BOUNDARY FOUND');
+          noBoundaryCount++;
           continue;
         }
 
@@ -354,6 +362,7 @@ function debugDkim() {
         const aliyunMatch = /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/.test(headers);
         Logger.log('  Firebase selector match: ' + firebaseMatch);
         Logger.log('  Aliyun selector match: ' + aliyunMatch);
+        if (firebaseMatch || aliyunMatch) dkimMatchCount++;
 
         // Also check via the real function
         const dkimResult = checkSuspiciousDkimSelector(message);
@@ -363,12 +372,21 @@ function debugDkim() {
         const spoofResult = checkForSpoof(message);
         Logger.log('  checkForSpoof result: isSpoof=' + spoofResult.isSpoof +
           ', reason=' + spoofResult.reason);
+        if (spoofResult.isSpoof) spoofCount++;
       } catch (e) {
         Logger.log('  ERROR: ' + e.message);
+        errorCount++;
       }
       Logger.log('');
     }
   }
+
+  Logger.log('=== SUMMARY ===');
+  Logger.log('Messages checked: ' + totalMessages);
+  Logger.log('DKIM selector matches: ' + dkimMatchCount);
+  Logger.log('Spoofs detected: ' + spoofCount);
+  Logger.log('No header boundary: ' + noBoundaryCount);
+  Logger.log('Errors: ' + errorCount);
 }
 
 /**
