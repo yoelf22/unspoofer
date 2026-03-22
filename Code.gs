@@ -118,12 +118,25 @@ function scanInbox() {
 }
 
 /**
+ * Gets the current user's email address reliably across Workspace and consumer accounts.
+ * @returns {string}
+ */
+function getOwnerEmail_() {
+  return Session.getEffectiveUser().getEmail() ||
+    Session.getActiveUser().getEmail() ||
+    '';
+}
+
+/**
  * Sends an email alert with an HTML table summarizing detected spoofs.
  * @param {Array<{subject: string, email: string, displayName: string, reason: string}>} spoofs
  */
 function sendSpoofAlert_(spoofs) {
-  const recipient = Session.getActiveUser().getEmail();
-  if (!recipient) return;
+  const recipient = getOwnerEmail_();
+  if (!recipient) {
+    Logger.log('Could not determine owner email — skipping alert');
+    return;
+  }
 
   const rows = spoofs.map(function(s) {
     const esc = function(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
@@ -146,11 +159,9 @@ function sendSpoofAlert_(spoofs) {
     '</tr>' + rows + '</table>' +
     '<p style="color:#666;font-size:12px">Sent by Unspoofer. These messages have been labeled SPOOF-ALERT and starred in your inbox.</p>';
 
-  MailApp.sendEmail({
-    to: recipient,
-    subject: 'Spoof Alert: ' + spoofs.length + ' suspicious message' + (spoofs.length > 1 ? 's' : '') + ' found',
-    htmlBody: html,
-  });
+  GmailApp.sendEmail(recipient,
+    'Spoof Alert: ' + spoofs.length + ' suspicious message' + (spoofs.length > 1 ? 's' : '') + ' found',
+    '', { htmlBody: html });
   Logger.log('Alert email sent to ' + recipient);
 }
 
@@ -443,14 +454,14 @@ function debugDkim() {
   L('Errors: ' + errorCount);
 
   // Email the results
-  const recipient = Session.getActiveUser().getEmail();
+  const recipient = getOwnerEmail_();
   if (recipient) {
-    MailApp.sendEmail({
-      to: recipient,
-      subject: 'Unspoofer debugDkim results — ' + spoofCount + ' spoofs, ' + totalMessages + ' messages',
-      body: log.join('\n'),
-    });
-    Logger.log('Debug results emailed to ' + recipient);
+    GmailApp.sendEmail(recipient,
+      'Unspoofer debugDkim results — ' + spoofCount + ' spoofs, ' + totalMessages + ' messages',
+      log.join('\n'));
+    L('Debug results emailed to ' + recipient);
+  } else {
+    L('Could not determine owner email — check log in script editor');
   }
 }
 
