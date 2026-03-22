@@ -271,6 +271,16 @@ function testDetection() {
         'Authentication-Results: mx.google.com; dkim=pass header.i=@fa-netscher.de header.s=aliyun-ap-southeast-1\n' +
         '\n',
     },
+    {
+      name: 'Brand in email local part — Wix impersonation',
+      from: '"Wix Domain Registration" <domains.notifications.wix.renew@investireinlettonia.it>',
+      expectSpoof: true,
+    },
+    {
+      name: 'Legitimate email with brand in local part should not flag',
+      from: '"John" <wix-user@wix.com>',
+      expectSpoof: false,
+    },
   ];
 
   let passed = 0;
