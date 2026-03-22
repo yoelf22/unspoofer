@@ -468,6 +468,69 @@ function debugDkim() {
 }
 
 /**
+ * Targeted test: find a specific sender and diagnose why detection fails.
+ * Run from script editor after changing the search query if needed.
+ */
+function debugMessage() {
+  const threads = GmailApp.search('from:babyamerica.com newer_than:7d', 0, 5);
+  if (threads.length === 0) {
+    Logger.log('No messages found');
+    return;
+  }
+  const message = threads[0].getMessages()[0];
+  const from = message.getFrom();
+  const lines = ['From: ' + from, ''];
+
+  try {
+    const raw = message.getRawContent();
+    lines.push('Raw content length: ' + raw.length);
+    lines.push('First 500 chars:');
+    lines.push(raw.substring(0, 500));
+    lines.push('');
+
+    const crlfEnd = raw.indexOf('\r\n\r\n');
+    const lfEnd = raw.indexOf('\n\n');
+    lines.push('CRLF boundary at: ' + crlfEnd);
+    lines.push('LF boundary at: ' + lfEnd);
+
+    let headerEnd = crlfEnd;
+    if (headerEnd <= 0) headerEnd = lfEnd;
+
+    if (headerEnd > 0) {
+      const headers = raw.substring(0, headerEnd);
+      lines.push('Header length: ' + headers.length);
+      const selectors = headers.match(/\bs=[a-z0-9_-]+/gi);
+      lines.push('All s= values: ' + JSON.stringify(selectors));
+
+      const fb = /(?:header\.s|\bs)=firebase1\b/.test(headers);
+      const al = /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/.test(headers);
+      lines.push('Firebase match: ' + fb);
+      lines.push('Aliyun match: ' + al);
+    } else {
+      lines.push('NO HEADER BOUNDARY FOUND');
+    }
+
+    lines.push('');
+    const result = checkForSpoof(message);
+    lines.push('checkForSpoof: isSpoof=' + result.isSpoof);
+    lines.push('reason: ' + result.reason);
+    lines.push('details: ' + result.details);
+  } catch (e) {
+    lines.push('ERROR: ' + e.message);
+    lines.push('Stack: ' + e.stack);
+  }
+
+  const body = lines.join('\n');
+  Logger.log(body);
+
+  const recipient = getOwnerEmail_();
+  if (recipient) {
+    GmailApp.sendEmail(recipient, 'Unspoofer debugMessage: ' + from, body);
+    Logger.log('Emailed to ' + recipient);
+  }
+}
+
+/**
  * Clears the processed message cache and immediately re-scans.
  * Use after deploying detection changes to re-check previously missed messages.
  */
