@@ -543,7 +543,7 @@ function debugMessage() {
   const body = lines.join('\n');
   Logger.log(body);
 
-  const recipient = getOwnerEmail_();
+  recipient = getOwnerEmail_();
   if (recipient) {
     GmailApp.sendEmail(recipient, 'Unspoofer debugMessage: ' + from, body);
     Logger.log('Emailed to ' + recipient);
