@@ -383,10 +383,7 @@ function testDetection() {
  */
 function debugDkim() {
   const threads = GmailApp.search('in:inbox newer_than:3d', 0, 20);
-  const log = [];
-  const L = function(msg) { Logger.log(msg); log.push(msg); };
-
-  L('Checking ' + threads.length + ' threads...');
+  const emailLog = []; // Only interesting findings for the email
 
   let totalMessages = 0;
   let spoofCount = 0;
@@ -399,69 +396,74 @@ function debugDkim() {
     for (const message of messages) {
       totalMessages++;
       const from = message.getFrom();
-      L('--- Message from: ' + from);
+      const msgLog = []; // Per-message log buffer
 
       try {
         const raw = message.getRawContent();
-        L('  Raw content length: ' + raw.length);
-        L('  First 200 chars: ' + raw.substring(0, 200));
-
         const crlfEnd = raw.indexOf('\r\n\r\n');
         const lfEnd = raw.indexOf('\n\n');
-        L('  CRLF boundary at: ' + crlfEnd);
-        L('  LF boundary at: ' + lfEnd);
-
         let headerEnd = crlfEnd;
         if (headerEnd <= 0) headerEnd = lfEnd;
+
         if (headerEnd <= 0) {
-          L('  NO HEADER BOUNDARY FOUND');
           noBoundaryCount++;
-          continue;
+          msgLog.push('  NO HEADER BOUNDARY FOUND (CRLF=' + crlfEnd + ', LF=' + lfEnd + ')');
+        } else {
+          const headers = raw.substring(0, headerEnd);
+          const selectorMatches = headers.match(/\bs=[a-z0-9_-]+/gi);
+          const firebaseMatch = /(?:header\.s|\bs)=firebase1\b/.test(headers);
+          const aliyunMatch = /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/.test(headers);
+          if (firebaseMatch || aliyunMatch) {
+            dkimMatchCount++;
+            msgLog.push('  DKIM selector match! Firebase=' + firebaseMatch + ' Aliyun=' + aliyunMatch);
+            msgLog.push('  All s= values: ' + JSON.stringify(selectorMatches));
+          }
         }
 
-        const headers = raw.substring(0, headerEnd);
-        L('  Header length: ' + headers.length);
-
-        // Log all s= values found
-        const selectorMatches = headers.match(/\bs=[a-z0-9_-]+/gi);
-        L('  All s= values: ' + JSON.stringify(selectorMatches));
-
-        // Check for DKIM selectors
-        const firebaseMatch = /(?:header\.s|\bs)=firebase1\b/.test(headers);
-        const aliyunMatch = /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/.test(headers);
-        L('  Firebase selector match: ' + firebaseMatch);
-        L('  Aliyun selector match: ' + aliyunMatch);
-        if (firebaseMatch || aliyunMatch) dkimMatchCount++;
-
-        // Full spoof check
         const spoofResult = checkForSpoof(message);
-        L('  checkForSpoof: isSpoof=' + spoofResult.isSpoof +
-          (spoofResult.reason ? ', reason=' + spoofResult.reason : ''));
-        if (spoofResult.isSpoof) spoofCount++;
+        if (spoofResult.isSpoof) {
+          spoofCount++;
+          msgLog.push('  SPOOF DETECTED: ' + spoofResult.reason);
+        }
       } catch (e) {
-        L('  ERROR: ' + e.message);
         errorCount++;
+        msgLog.push('  ERROR: ' + e.message);
       }
-      L('');
+
+      // Only include messages with findings
+      if (msgLog.length > 0) {
+        emailLog.push('--- ' + from);
+        emailLog.push.apply(emailLog, msgLog);
+        emailLog.push('');
+      }
+
+      // Always log everything to script editor
+      Logger.log('--- ' + from + (msgLog.length > 0 ? '\n' + msgLog.join('\n') : ' (clean)'));
     }
   }
 
-  L('=== SUMMARY ===');
-  L('Messages checked: ' + totalMessages);
-  L('DKIM selector matches: ' + dkimMatchCount);
-  L('Spoofs detected: ' + spoofCount);
-  L('No header boundary: ' + noBoundaryCount);
-  L('Errors: ' + errorCount);
+  const summary = [
+    '=== SUMMARY ===',
+    'Messages checked: ' + totalMessages,
+    'DKIM selector matches: ' + dkimMatchCount,
+    'Spoofs detected: ' + spoofCount,
+    'No header boundary: ' + noBoundaryCount,
+    'Errors: ' + errorCount,
+  ];
+  summary.forEach(function(line) { Logger.log(line); });
 
-  // Email the results
+  // Email only findings + summary
   const recipient = getOwnerEmail_();
   if (recipient) {
+    const body = emailLog.length > 0
+      ? emailLog.join('\n') + '\n' + summary.join('\n')
+      : summary.join('\n') + '\n\nNo issues found in any messages.';
     GmailApp.sendEmail(recipient,
-      'Unspoofer debugDkim results — ' + spoofCount + ' spoofs, ' + totalMessages + ' messages',
-      log.join('\n'));
-    L('Debug results emailed to ' + recipient);
+      'Unspoofer debug: ' + spoofCount + ' spoofs, ' + dkimMatchCount + ' DKIM matches, ' + errorCount + ' errors',
+      body);
+    Logger.log('Debug results emailed to ' + recipient);
   } else {
-    L('Could not determine owner email — check log in script editor');
+    Logger.log('Could not determine owner email — check log in script editor');
   }
 }
 
