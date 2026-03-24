@@ -29,12 +29,12 @@ function setup() {
     }
   }
 
-  // Create a new 15-minute trigger
+  // Create a new 1-minute trigger
   ScriptApp.newTrigger('scanInbox')
     .timeBased()
-    .everyMinutes(15)
+    .everyMinutes(1)
     .create();
-  Logger.log('Created 15-minute trigger for scanInbox');
+  Logger.log('Created 1-minute trigger for scanInbox');
 
   Logger.log('Setup complete. Unspoofer is active.');
 }
