@@ -29,18 +29,18 @@ function setup() {
     }
   }
 
-  // Create a new 1-minute trigger
+  // Create a new 10-minute trigger
   ScriptApp.newTrigger('scanInbox')
     .timeBased()
-    .everyMinutes(1)
+    .everyMinutes(10)
     .create();
-  Logger.log('Created 1-minute trigger for scanInbox');
+  Logger.log('Created 10-minute trigger for scanInbox');
 
   Logger.log('Setup complete. Unspoofer is active.');
 }
 
 /**
- * Main scan function — called by trigger every 15 minutes.
+ * Main scan function — called by trigger every 10 minutes.
  * Searches recent inbox messages, detects spoofs, applies label + star.
  */
 function scanInbox() {
