@@ -217,12 +217,28 @@ function checkForSpoof(message) {
     const localPart = sender.email.split('@')[0].replace(/[._+-]/g, ' ');
     brandMatch = findSpoofedBrand(localPart);
   }
-  if (!brandMatch) return result;
+  // 5. Extract sender's root domain (needed by both brand and generic checks)
+  if (!senderDomain) return result;
+  const actualRoot = extractRootDomain(senderDomain);
 
-  // 5. Extract domain from the actual email address
-  const emailDomain = senderDomain;
-  if (!emailDomain) return result;
-  const actualRoot = extractRootDomain(emailDomain);
+  // 5b. Generic check: display name contains a domain that doesn't match sender.
+  //     Catches spoofs for brands NOT in the brand list (e.g., "Support - newbrand.com"
+  //     sent from unrelated-domain.de).
+  if (!brandMatch) {
+    const impliedDomain = extractDomainFromDisplayName(sender.displayName);
+    if (impliedDomain) {
+      const impliedRoot = extractRootDomain(impliedDomain);
+      if (impliedRoot !== actualRoot && !isRelatedBrandDomain(impliedRoot, actualRoot)) {
+        result.isSpoof = true;
+        result.brand = impliedRoot.split('.')[0];
+        result.reason = 'Display name contains domain ' + impliedDomain +
+          ' but email is from ' + actualRoot;
+        result.details = 'From: ' + from + ' | Display domain: ' + impliedDomain +
+          ' | Actual domain: ' + actualRoot;
+      }
+    }
+    return result;
+  }
 
   // 6. Check if the actual sender domain matches the brand domain
   const brandRoot = extractRootDomain(brandMatch.domain);

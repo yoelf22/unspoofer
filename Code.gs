@@ -343,6 +343,37 @@ function testDetection() {
       from: '"John" <wix-user@wix.com>',
       expectSpoof: false,
     },
+    // Generic domain-in-display-name checks (no brand list needed)
+    {
+      name: 'Generic: display name contains unknown domain, sender mismatch',
+      from: '"Support - coolstartup.com" <noreply@totally-unrelated.de>',
+      expectSpoof: true,
+    },
+    {
+      name: 'Generic: display name domain matches sender — legitimate',
+      from: '"coolstartup.com Updates" <noreply@coolstartup.com>',
+      expectSpoof: false,
+    },
+    {
+      name: 'Generic: display name domain matches sender subdomain — legitimate',
+      from: '"coolstartup.com" <noreply@mail.coolstartup.com>',
+      expectSpoof: false,
+    },
+    {
+      name: 'Generic: no domain in display name — not flagged',
+      from: '"Some Random Sender" <hello@whatever.com>',
+      expectSpoof: false,
+    },
+    {
+      name: 'ChatGPT spoof from unrelated domain (brand list)',
+      from: '"ChatGPT" <noreply@info.casadelsilencio.de>',
+      expectSpoof: true,
+    },
+    {
+      name: 'Legitimate OpenAI email',
+      from: '"OpenAI" <noreply@openai.com>',
+      expectSpoof: false,
+    },
   ];
 
   let passed = 0;

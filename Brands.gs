@@ -7,6 +7,9 @@ const BRAND_DOMAINS = [
   'google.com', 'apple.com', 'microsoft.com', 'amazon.com', 'meta.com',
   'facebook.com', 'instagram.com', 'whatsapp.com',
 
+  // AI
+  'openai.com', 'chatgpt.com',
+
   // Cloud / SaaS
   'wix.com', 'squarespace.com', 'shopify.com', 'godaddy.com',
   'dropbox.com', 'zoom.us', 'slack.com', 'notion.so',
@@ -54,6 +57,7 @@ const BRAND_GROUPS = [
   ['apple.com', 'icloud.com', 'me.com', 'mac.com'],
   ['meta.com', 'facebook.com', 'instagram.com', 'whatsapp.com'],
   ['amazon.com', 'amazonaws.com'],
+  ['openai.com', 'chatgpt.com'],
 ];
 
 let _relatedDomainCache = null;
