@@ -20,7 +20,6 @@ const SUSPICIOUS_PLATFORMS = [
  */
 const SUSPICIOUS_DKIM_SELECTORS = [
   { platform: 'firebase', pattern: /(?:header\.s|\bs)=firebase1\b/ },
-  { platform: 'alibaba cloud', pattern: /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/ },
 ];
 
 /**

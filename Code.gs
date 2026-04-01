@@ -326,9 +326,9 @@ function testDetection() {
         '\n',
     },
     {
-      name: 'Alibaba Cloud phishing — custom domain with aliyun DKIM selector',
+      name: 'Alibaba Cloud mail — legitimate email service, not flagged',
       from: '"Important Notice" <noreply@fa-netscher.de>',
-      expectSpoof: true,
+      expectSpoof: false,
       rawHeaders: 'DKIM-Signature: v=1; a=rsa-sha256; d=fa-netscher.de; s=aliyun-ap-southeast-1; b=abc\n' +
         'Authentication-Results: mx.google.com; dkim=pass header.i=@fa-netscher.de header.s=aliyun-ap-southeast-1\n' +
         '\n',
@@ -443,10 +443,9 @@ function debugDkim() {
           const headers = raw.substring(0, headerEnd);
           const selectorMatches = headers.match(/\bs=[a-z0-9_-]+/gi);
           const firebaseMatch = /(?:header\.s|\bs)=firebase1\b/.test(headers);
-          const aliyunMatch = /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/.test(headers);
-          if (firebaseMatch || aliyunMatch) {
+          if (firebaseMatch) {
             dkimMatchCount++;
-            msgLog.push('  DKIM selector match! Firebase=' + firebaseMatch + ' Aliyun=' + aliyunMatch);
+            msgLog.push('  DKIM selector match! Firebase=' + firebaseMatch);
             msgLog.push('  All s= values: ' + JSON.stringify(selectorMatches));
           }
         }
@@ -554,9 +553,7 @@ function debugMessage() {
       lines.push('All s= values: ' + JSON.stringify(selectors));
 
       const fb = /(?:header\.s|\bs)=firebase1\b/.test(headers);
-      const al = /(?:header\.s|\bs)=aliyun-[a-z0-9-]*\b/.test(headers);
       lines.push('Firebase match: ' + fb);
-      lines.push('Aliyun match: ' + al);
     } else {
       lines.push('NO HEADER BOUNDARY FOUND');
     }
