@@ -38,7 +38,7 @@ const BRAND_DOMAINS = [
   'fibi.co.il',
 
   // Israeli services
-  'walla.co.il', 'ynet.co.il',
+  'walla.co.il', 'ynet.co.il', 'gett.com',
 
   // Security / infra
   'cloudflare.com', 'github.com', 'gitlab.com',

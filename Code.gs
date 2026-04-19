@@ -374,6 +374,11 @@ function testDetection() {
       from: '"OpenAI" <noreply@openai.com>',
       expectSpoof: false,
     },
+    {
+      name: 'Legitimate Gett multi-TLD display name (.business is a gTLD)',
+      from: '"Gett.Business" <noreply@business-news.gett.com>',
+      expectSpoof: false,
+    },
   ];
 
   let passed = 0;
