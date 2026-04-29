@@ -379,12 +379,30 @@ function testDetection() {
       from: '"Gett.Business" <noreply@business-news.gett.com>',
       expectSpoof: false,
     },
+    {
+      name: 'Form-service notification: display name = recipient own domain',
+      from: '"theroadtlv.com" <formresponses@netlify.com>',
+      expectSpoof: false,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Form-service notification still flagged when not your own domain',
+      from: '"someoneelse.com" <formresponses@netlify.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
   ];
 
   let passed = 0;
   let failed = 0;
 
+  const savedOwnerDomain = _ownerDomainCache;
+
   for (const tc of testCases) {
+    // Override owner domain for tests that exercise the recipient-domain check
+    _ownerDomainCache = Object.prototype.hasOwnProperty.call(tc, 'ownerDomain')
+      ? tc.ownerDomain
+      : '';
     // Build a mock GmailMessage that exercises the real checkForSpoof() code path
     const mockMessage = {
       getFrom: () => tc.from,
@@ -409,6 +427,8 @@ function testDetection() {
     if (result.isSpoof) Logger.log('  Reason: ' + result.reason);
     Logger.log('');
   }
+
+  _ownerDomainCache = savedOwnerDomain;
 
   Logger.log('Results: ' + passed + ' passed, ' + failed + ' failed out of ' + testCases.length + ' tests');
 }

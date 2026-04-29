@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-29
+
+### Fixed
+- Form-service notifications no longer flagged as spoofs. Generic domain-in-display-name check now skips when the implied domain matches the inbox owner's own domain — catches Netlify Forms, Formspree, and similar services that put the customer's domain in the display name (e.g., `"theroadtlv.com" <formresponses@netlify.com>`).
+
 ## 2026-03-30
 
 ### Added

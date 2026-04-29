@@ -70,6 +70,29 @@ function checkSuspiciousDkimSelector(message) {
 /** @type {string[]|null} */
 let _whitelistCache = null;
 
+/** @type {string|null} */
+let _ownerDomainCache = null;
+
+/**
+ * Returns the inbox owner's root domain (cached per execution).
+ * Used to recognize legitimate notifications about the recipient's own domain
+ * (e.g., form-service emails like Netlify Forms that put the customer's domain
+ * in the display name).
+ * @returns {string}
+ */
+function getOwnerDomain_() {
+  if (_ownerDomainCache !== null) return _ownerDomainCache;
+  try {
+    const email = (Session.getEffectiveUser().getEmail() ||
+      Session.getActiveUser().getEmail() || '').toLowerCase();
+    const domain = email.split('@')[1] || '';
+    _ownerDomainCache = domain ? extractRootDomain(domain) : '';
+  } catch (e) {
+    _ownerDomainCache = '';
+  }
+  return _ownerDomainCache;
+}
+
 /**
  * Returns the sender whitelist from Script Properties (cached per execution).
  * @returns {string[]}
@@ -227,6 +250,12 @@ function checkForSpoof(message) {
     const impliedDomain = extractDomainFromDisplayName(sender.displayName);
     if (impliedDomain) {
       const impliedRoot = extractRootDomain(impliedDomain);
+      // Skip when the implied domain is the inbox owner's own domain. Form-service
+      // notifications (Netlify Forms, Formspree, etc.) legitimately put the
+      // recipient's domain in the display name; phishing impersonates other brands,
+      // not your own domain to you.
+      const ownerDomain = getOwnerDomain_();
+      if (ownerDomain && impliedRoot === ownerDomain) return result;
       if (impliedRoot !== actualRoot && !isRelatedBrandDomain(impliedRoot, actualRoot)) {
         result.isSpoof = true;
         result.brand = impliedRoot.split('.')[0];
