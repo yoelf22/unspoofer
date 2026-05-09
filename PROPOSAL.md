@@ -1,5 +1,7 @@
 # Proposal: Multi-User / Admin Deployment
 
+<img src="images/mascot.png" align="right" width="160" alt="Unspoofer mascot">
+
 ## Background
 
 Unspoofer is a Google Apps Script that detects display-name spoofing in
