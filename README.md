@@ -1,5 +1,7 @@
 # Unspoofer — Gmail Display-Name Spoof Detector
 
+<img src="images/mascot.png" align="right" width="200" alt="Unspoofer mascot — a detective fox examining an envelope with a magnifying glass">
+
 If you run Gsuite as your email server, this is for you.
 
 A Google Apps Script that automatically detects phishing emails that use **display-name spoofing** — where the sender name shows a trusted brand (e.g., "Wіх.соm" with Cyrillic characters) but the actual email comes from an unrelated domain (e.g., `info@bistro-pub.de`).
