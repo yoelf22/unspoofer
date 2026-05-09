@@ -1,4 +1,4 @@
-# RFQ: Adapt Unspoofer for Multi-User / Admin Deployment
+# Proposal: Multi-User / Admin Deployment
 
 ## Background
 
@@ -7,11 +7,11 @@ Gmail (e.g., "Wіх.соm" written with Cyrillic characters from a non-Wix
 domain). Today it is a per-user install: each user copies the script
 into their own Apps Script project and authorizes Gmail access individually.
 
-- Repo: <https://github.com/yoelf22/unspoofer>  <!-- TODO confirm URL -->
+- Repo: <https://github.com/yoelf22/unspoofer>
 - Architecture: 6-file Apps Script project, per-user OAuth, 15-min
   time-driven trigger, ~50 brand domains hardcoded in `Brands.gs`.
 
-## The Ask
+## The Goal
 
 Adapt Unspoofer for a Google Workspace organization with one admin and
 multiple end users. The admin should be able to:
@@ -43,11 +43,11 @@ End users should:
 - Larger security surface; requires admin DwD approval.
 
 Rough fit: Option A for orgs under ~50 users, Option B above that.
-Bidders may propose one, the other, or both.
+Contributors may take on one, the other, or both.
 
 ## Deliverables
 
-- Source code in a public GitHub repo (MIT, matching current repo).
+- Source code in this repo (MIT).
 - Admin install/setup guide.
 - End-user docs (or "you don't need to do anything" if fully transparent).
 - Brand list + allowlist editing workflow for the admin.
@@ -68,7 +68,7 @@ Bidders may propose one, the other, or both.
 
 - Must work with Google Workspace (any tier that supports Marketplace
   add-ons or domain-wide delegation).
-- Apps Script for Option A; bidder's choice of stack for Option B.
+- Apps Script for Option A; contributor's choice of stack for Option B.
 - License: MIT.
 - Code style: match existing repo (vanilla JS, no transpiler on the
   Apps Script side).
@@ -81,19 +81,18 @@ Bidders may propose one, the other, or both.
 - Non-Google Workspace providers (M365, Fastmail, etc.).
 - ML/AI-based detection.
 
-## Budget & Timeline
+## How to Contribute
 
-- Budget: TODO (or: "open to proposals — please include estimate").
-- Timeline: TODO (target completion date).
-- Engagement: TODO (fixed price / hourly / open-source bounty).
+This is an open source effort — MIT licensed, no compensation, full
+credit and maintainer status for substantial contributions.
 
-## How to Respond
+If you're interested, comment on the discussion:
+<https://github.com/yoelf22/unspoofer/discussions/1>
 
-Reply on this thread with:
+Useful background for picking up this work:
 
-1. Which option(s) you would build.
-2. Estimated effort and cost.
-3. Relevant prior work (Apps Script, Workspace add-ons, GCP DwD).
-4. Any clarifying questions.
+- Apps Script + Gmail API basics
+- Google Workspace Marketplace add-on publishing flow (for Option A)
+- GCP service accounts with domain-wide delegation (for Option B)
 
-Contact: TODO (email, or "reply on this thread").
+Open questions and design discussion welcome before any code is written.
