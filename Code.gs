@@ -412,6 +412,12 @@ function testDetection() {
       ownerDomain: 'theroadtlv.com',
     },
     {
+      name: 'Owner impersonation: homoglyph in owner token (Cyrillic o) from external sender',
+      from: '"Docs@therоadtlv" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
       name: 'Owner label from the owner\'s own domain — legitimate internal sender',
       from: '"theroadtlv Team" <admin@theroadtlv.com>',
       expectSpoof: false,

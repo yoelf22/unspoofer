@@ -25,9 +25,10 @@ const SUSPICIOUS_DKIM_SELECTORS = [
 /**
  * Root domains of services legitimately allowed to put the recipient's own
  * organization name/domain in the From display name (form-service and
- * on-behalf-of notifications, e.g. Netlify Forms, DocuSign). Keyed on the
- * actual authenticated sender root, which SPF/DKIM guarantee — so this
- * carve-out cannot be abused by a lookalike sender.
+ * on-behalf-of notifications, e.g. Netlify Forms, DocuSign). Matched against
+ * the root domain of the From address itself (not display-name content). As
+ * with every other check in this file, this trusts the From address and does
+ * not itself verify DKIM/SPF alignment.
  */
 const OWNER_REF_ALLOWED_SERVICES = [
   'netlify.com',
@@ -236,10 +237,10 @@ function checkOwnerImpersonation(sender, from) {
 
   // Owner org labels contain only [a-z0-9-], none of which are regex
   // metacharacters, so the token is safe to embed directly.
+  // Whole-word match of the org label. Because @ and . are non-word characters,
+  // \b covers the bare token, the @-styled form, and the full domain alike.
   const tokenPattern = new RegExp('\\b' + ownerToken + '\\b');
-  const references =
-    tokenPattern.test(normalized) || normalized.indexOf(ownerRoot) !== -1;
-  if (!references) return null;
+  if (!tokenPattern.test(normalized)) return null;
 
   const senderDomain = sender.email.split('@')[1];
   if (!senderDomain) return null;
