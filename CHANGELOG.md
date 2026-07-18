@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-18
+
+### Added
+- Detect owner-domain (self) impersonation: flag external senders that put your
+  own organization's name/domain in the From display name, e.g.
+  "Docs@theroadtlv" <documents@asecureltd.com>. Includes an allowlist of
+  recognized on-behalf-of services so legitimate form/e-sign mail still passes.
+
 ## 2026-04-29
 
 ### Fixed

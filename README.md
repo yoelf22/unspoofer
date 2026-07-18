@@ -21,8 +21,11 @@ A Google Apps Script that automatically detects phishing emails that use **displ
 |---|---|---|
 | "Wіх.соm" (Cyrillic і and о) | info@bistro-pub.de | **Spoof detected** |
 | "PаyPаl Security" (Cyrillic а) | alerts@some-random.com | **Spoof detected** |
+| "Docs@theroadtlv" (your own org) | documents@asecureltd.com | **Spoof detected** |
 | "Wix.com" | noreply@wix.com | Legitimate |
 | "Google" | no-reply@accounts.google.com | Legitimate |
+
+It also catches **self-impersonation**: an external sender wearing your own organization's name or domain in the display name — bare (`theroadtlv`), `@`-styled (`Docs@theroadtlv`), or full-domain (`theroadtlv.com`). Recognized on-behalf-of services (Netlify, Formspree, Google, DocuSign) that legitimately name your org are allowed through.
 
 ## Installation
 
