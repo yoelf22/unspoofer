@@ -23,6 +23,20 @@ const SUSPICIOUS_DKIM_SELECTORS = [
 ];
 
 /**
+ * Root domains of services legitimately allowed to put the recipient's own
+ * organization name/domain in the From display name (form-service and
+ * on-behalf-of notifications, e.g. Netlify Forms, DocuSign). Keyed on the
+ * actual authenticated sender root, which SPF/DKIM guarantee — so this
+ * carve-out cannot be abused by a lookalike sender.
+ */
+const OWNER_REF_ALLOWED_SERVICES = [
+  'netlify.com',
+  'formspree.io',
+  'google.com',
+  'docusign.net',
+];
+
+/**
  * Checks if a sender domain is a subdomain of a known suspicious platform.
  * @param {string} emailDomain - e.g., "kriyiasahbi.firebaseapp.com"
  * @returns {string|null} The matched platform or null
@@ -192,6 +206,58 @@ function extractDomainFromDisplayName(displayName) {
 }
 
 /**
+ * Detects an external sender wearing the inbox owner's own organizational
+ * identity in the From display name — internal-impersonation phishing such as
+ * "Docs@theroadtlv" <documents@asecureltd.com>.
+ *
+ * The owner's org label (e.g. "theroadtlv" from "theroadtlv.com") is matched as
+ * a whole word after homoglyph normalization, so it fires on the bare token,
+ * the @-styled form, and the full domain alike (@ and . are non-word characters,
+ * so the \b boundaries hold). The message passes when the sender is the owner's
+ * own aligned domain (genuinely internal) or a recognized on-behalf-of service.
+ *
+ * This check is authoritative for owner-domain references: it either flags the
+ * message or intentionally clears it. The generic check at step 5b defers to it
+ * via the kept owner-domain skip.
+ *
+ * @param {{displayName: string, email: string}} sender - parsed From
+ * @param {string} from - raw From header string (for details)
+ * @returns {{isSpoof: boolean, reason: string, brand: string, details: string}|null}
+ */
+function checkOwnerImpersonation(sender, from) {
+  const ownerRoot = getOwnerDomain_();
+  if (!ownerRoot) return null;
+
+  const ownerToken = ownerRoot.split('.')[0];
+  if (ownerToken.length < 4) return null; // too short to word-match safely
+
+  if (!sender.displayName) return null;
+  const normalized = normalizeToAscii(sender.displayName).toLowerCase();
+
+  // Owner org labels contain only [a-z0-9-], none of which are regex
+  // metacharacters, so the token is safe to embed directly.
+  const tokenPattern = new RegExp('\\b' + ownerToken + '\\b');
+  const references =
+    tokenPattern.test(normalized) || normalized.indexOf(ownerRoot) !== -1;
+  if (!references) return null;
+
+  const senderDomain = sender.email.split('@')[1];
+  if (!senderDomain) return null;
+  const senderRoot = extractRootDomain(senderDomain);
+
+  if (senderRoot === ownerRoot) return null; // genuinely internal
+  if (OWNER_REF_ALLOWED_SERVICES.indexOf(senderRoot) !== -1) return null; // legit on-behalf-of
+
+  return {
+    isSpoof: true,
+    brand: ownerToken,
+    reason: 'Display name impersonates your own domain (' + ownerToken +
+      ') but email is from ' + senderRoot,
+    details: 'From: ' + from + ' | Owner: ' + ownerRoot + ' | Actual: ' + senderRoot,
+  };
+}
+
+/**
  * Main spoof-detection check for a single Gmail message.
  * @param {GmailMessage} message
  * @returns {{isSpoof: boolean, reason: string, brand: string, details: string}}
@@ -228,6 +294,13 @@ function checkForSpoof(message) {
     result.details = 'From: ' + from + ' | Sender domain: ' + senderDomain;
     return result;
   }
+
+  // 3c. Check for owner-domain impersonation: an external sender wearing the
+  //     inbox owner's own org identity in the display name (e.g.
+  //     "Docs@theroadtlv" <documents@asecureltd.com>). Authoritative for
+  //     owner-domain references — the generic check at step 5b defers to it.
+  const ownerSpoof = checkOwnerImpersonation(sender, from);
+  if (ownerSpoof) return ownerSpoof;
 
   // 4. Normalize display name and look for brand match
   const normalizedName = sender.displayName ? normalizeToAscii(sender.displayName) : '';

@@ -393,6 +393,30 @@ function testDetection() {
       expectSpoof: true,
       ownerDomain: 'theroadtlv.com',
     },
+    {
+      name: 'Owner impersonation: @-styled bare owner label from external sender',
+      from: '"Docs@theroadtlv" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner impersonation: full owner domain from external sender',
+      from: '"theroadtlv.com" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner impersonation: @-styled owner domain with TLD from external sender',
+      from: '"Docs@theroadtlv.com" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner label from the owner\'s own domain — legitimate internal sender',
+      from: '"theroadtlv Team" <admin@theroadtlv.com>',
+      expectSpoof: false,
+      ownerDomain: 'theroadtlv.com',
+    },
   ];
 
   let passed = 0;
