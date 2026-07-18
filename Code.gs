@@ -275,7 +275,9 @@ function testDetection() {
     {
       name: 'Greek omicron Netflix spoof',
       from: '"Netfli\u03BF.com" <billing@fake-stream.net>',
-      expectSpoof: false, // "netflio" doesn't match "netflix"
+      // Homoglyph "netflio" doesn't match the "netflix" brand, but the generic
+      // domain-in-display-name check flags "netflio.com" vs sender fake-stream.net.
+      expectSpoof: true,
     },
     {
       name: 'Regular non-brand email',
