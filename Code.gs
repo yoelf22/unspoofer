@@ -275,7 +275,9 @@ function testDetection() {
     {
       name: 'Greek omicron Netflix spoof',
       from: '"Netfli\u03BF.com" <billing@fake-stream.net>',
-      expectSpoof: false, // "netflio" doesn't match "netflix"
+      // Homoglyph "netflio" doesn't match the "netflix" brand, but the generic
+      // domain-in-display-name check flags "netflio.com" vs sender fake-stream.net.
+      expectSpoof: true,
     },
     {
       name: 'Regular non-brand email',
@@ -389,6 +391,36 @@ function testDetection() {
       name: 'Form-service notification still flagged when not your own domain',
       from: '"someoneelse.com" <formresponses@netlify.com>',
       expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner impersonation: @-styled bare owner label from external sender',
+      from: '"Docs@theroadtlv" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner impersonation: full owner domain from external sender',
+      from: '"theroadtlv.com" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner impersonation: @-styled owner domain with TLD from external sender',
+      from: '"Docs@theroadtlv.com" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner impersonation: homoglyph in owner token (Cyrillic o) from external sender',
+      from: '"Docs@therоadtlv" <documents@asecureltd.com>',
+      expectSpoof: true,
+      ownerDomain: 'theroadtlv.com',
+    },
+    {
+      name: 'Owner label from the owner\'s own domain — legitimate internal sender',
+      from: '"theroadtlv Team" <admin@theroadtlv.com>',
+      expectSpoof: false,
       ownerDomain: 'theroadtlv.com',
     },
   ];
