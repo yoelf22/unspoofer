@@ -82,6 +82,15 @@ have". Authenticated **and** anomalous is now its own highest-priority verdict.
   asserted to be caught by D1, D3, D4 and D5 independently. Negative fixtures
   from real legitimate mail: a genuine DocuSign envelope, a Substack send, a
   WordPress password reset, a Netlify form notification.
+- Fixture #2: a real Substack post-reaction notification of 2026-08-21, kept as
+  the false-positive guard. It scores 30 of the 50 needed — html-only with no
+  `X-Mailer`, which is simply how bulk senders build mail — and is the
+  highest-scoring legitimate message seen so far. It pins three things at once:
+  D3 stays silent with the flag ON and the allowlist empty (Mailgun submits over
+  HTTP, so no provider SMTP relay is ever entered), the owner-domain check does
+  not fire on a message that genuinely concerns the owner (`theroadtlv.com` is
+  in the Return-Path but never in the From display name), and the D4 family cap
+  keeps html-only plus no-mailer below the threshold.
 
 ### Changed
 - `checkForSpoof()` returns `{isSpoof, score, severity, reason, brand, details,

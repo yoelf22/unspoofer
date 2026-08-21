@@ -618,6 +618,61 @@ function testDetection() {
       ].join('\n'),
     },
 
+    // ========================================================================
+    // Fixture #2 — a real legitimate message, kept as the false-positive guard.
+    //
+    // Received 2026-08-21: a Substack post-reaction notification for the
+    // owner's own publication, headers verbatim except truncated tokens and a
+    // body reduced to one link. It is the highest-scoring legitimate message
+    // seen so far — 30 of the 50 needed — because it is html-only with no
+    // X-Mailer, which is exactly how bulk senders build mail.
+    //
+    // Worth pinning because it stresses three things at once: D3 with the flag
+    // ON and an empty allowlist (the earliest hop is Mailgun's HTTP submission,
+    // not a provider SMTP relay, so D3 must stay silent); the owner-domain
+    // check against a message that genuinely concerns the owner (Sender: and
+    // the Return-Path both carry theroadtlv.com, but never the From display
+    // name); and the D4 family cap, which keeps html-only + no-mailer below the
+    // threshold no matter how ordinary the sender is.
+    // ========================================================================
+    {
+      name: 'Fixture #2: Substack reaction notification — legitimate, must stay clean',
+      from: 'Yoel Frischoff from IoT News Digest <reaction@mg1.substack.com>',
+      expectSpoof: false,
+      ownerDomain: 'theroadtlv.com',
+      enableReceivedChain: true,
+      expectDetectors: ['D4'],
+      expectNoDetectors: ['D1', 'D2', 'D3', 'D5', 'owner-impersonation'],
+      raw: [
+        'Received: by 2002:aa7:dc0b:0:b0:6a2:d1d:9e42 with SMTP id b11csp1278279edu;',
+        '        Fri, 21 Aug 2026 08:33:52 -0700 (PDT)',
+        'Return-Path: <bounce+61e23f.072c7b-yoel=theroadtlv.com@mg1.substack.com>',
+        'Received: from v539.v5375b7fa.use4.send.mailgun.net (v539.v5375b7fa.use4.send.mailgun.net. [159.112.244.39])',
+        '        by mx.google.com with UTF8SMTPS id 6a1803df08f44-90c5eeaec8asi66619836d6.102;',
+        '        Fri, 21 Aug 2026 08:33:51 -0700 (PDT)',
+        'Authentication-Results: mx.google.com;',
+        '       dkim=pass header.i=@mg1.substack.com header.s=mailo header.b=SWqEXy85;',
+        '       spf=pass (google.com: domain of bounce+61e23f.072c7b-yoel=theroadtlv.com@mg1.substack.com designates 159.112.244.39 as permitted sender) smtp.mailfrom="bounce+61e23f.072c7b-yoel=theroadtlv.com@mg1.substack.com";',
+        '       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=substack.com',
+        'DKIM-Signature: a=rsa-sha256; v=1; c=relaxed/relaxed; d=mg1.substack.com; s=mailo; b=SWqEXy85',
+        'Message-Id: <20260817053127.3.43ae793de5251028.6dqp34de@mg1.substack.com>',
+        'Date: Fri, 21 Aug 2026 15:33:51 GMT',
+        'Subject: Someone liked your post',
+        'From: Yoel Frischoff from IoT News Digest <reaction@mg1.substack.com>',
+        'To: yoel@theroadtlv.com',
+        'Sender: Yoel Frischoff from IoT News Digest <iotdigest@substack.com>',
+        'List-Id: <iotdigest.substack.com>',
+        'List-Unsubscribe: <https://iotdigest.substack.com/action/disable_email/disable?token=eyJ1c2VyX2lk>',
+        'Content-Type: text/html; charset="utf-8"',
+        'Content-Transfer-Encoding: quoted-printable',
+        'Received: by 67c389bcc96b7429192e9c59b13b09597ea72f7fe254be4accdff052a0ace83f',
+        '        with HTTP id 6a886fdf9c7ae96b6f887f7d; Fri, 21 Aug 2026 15:33:51 GMT',
+        '',
+        '<html><body><a href=3D"https://iotdigest.substack.com/p/iot-news-digest-2633">Re=',
+        'ad the post</a></body></html>',
+      ].join('\n'),
+    },
+
     // --- D3/D4/D5 negatives: real legitimately-relayed mail must stay clean ---
     {
       name: 'D5 negative: genuine DocuSign envelope',
