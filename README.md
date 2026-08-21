@@ -42,7 +42,7 @@ star only.
 |---|---|---|---|
 | **D1** | Brand near-miss (`Brands.gs`) | hard | Brand tokens with glued prefixes (`edocusign`), numeric suffixes (`docusign24`), separator splits (`docu-sign`), and typos within edit distance 2. Compares the brand's domain against **both** the From domain and the DKIM `d=` domain. |
 | **D2** | Display-name obfuscation (`DisplayName.gs`) | scored | Names over 60 characters (the real address never renders on a phone), pseudo-directory syntax (`EN=`, `LAN=`), an embedded address on a different domain, long opaque identifier runs. |
-| **D3** | Received-chain injection (`Provenance.gs`) | hard, **off by default** | Submission into a provider SMTP relay from a host unrelated to the sending domain. This is the compromised-tenant pattern. |
+| **D3** | Received-chain injection (`Provenance.gs`) | hard, **on** | Submission into a provider SMTP relay from a host unrelated to the sending domain. This is the compromised-tenant pattern. |
 | **D4** | MUA fingerprint (`Fingerprint.gs`) | scored | `text/html` with no `multipart/alternative`, no `X-Mailer` and no `User-Agent`, a Message-ID host matching neither the sender nor a known generator, composition in the small hours of the sender's own stated timezone. |
 | **D5** | Link analysis (`Links.gs`) | hard | A bare script at the web root of an unrelated host (`/dc.php`), links unrelated to both the claimed brand and the sender, your address encoded into the URL, anchor text disagreeing with the href. **Parse only — never fetches.** |
 
@@ -98,15 +98,24 @@ This runs against a working inbox that receives a lot of legitimately relayed
 mail. A tool that cries wolf on a newsletter gets muted, and then it catches
 nothing. Two things keep that from happening:
 
-- **D3 ships disabled**, and its relay allowlist ships **empty**. A guessed
-  allowlist entry is worse than none: it permanently exempts a domain + relay
-  pair that an attacker can then use freely. Build it from your own traffic:
+- **D3's relay allowlist ships empty, and stays empty until measurement says
+  otherwise.** A guessed entry is worse than none: it permanently exempts a
+  domain + relay pair an attacker can then use freely. Before adding anything,
+  measure:
 
   1. Run `reportRelayPairs()`. It prints every sender + relay pair currently in
      your mail, marks which ones D3 would flag, and changes nothing.
   2. `addRelayPair('example.com', 'smtp-relay.gmail.com')` for each pair you
      recognize as legitimate. Additions persist in Script Properties.
-  3. Only then set `ENABLE_RECEIVED_CHAIN = true` in `Provenance.gs`.
+
+  A flagged pair is as likely to be the attack as a newsletter, so
+  `reportRelayPairs()` deliberately will not hand you a ready-to-paste
+  `addRelayPair()` call for one — you have to recognize the sender yourself.
+
+  On the maintainer's own mailbox that measurement returned **one** pair across
+  97 messages, and it was the phishing message, so D3 ships **enabled** with an
+  empty allowlist. If your mail mixes differently, run the measurement before
+  trusting that default. `ENABLE_RECEIVED_CHAIN` in `Provenance.gs`.
 
 The sender whitelist from v1 still works: `addToWhitelist('example.com')`,
 `removeFromWhitelist(...)`, `showWhitelist()`.

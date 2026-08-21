@@ -33,12 +33,30 @@ have". Authenticated **and** anomalous is now its own highest-priority verdict.
   fail: over-length names, pseudo-directory syntax, embedded off-domain
   addresses, opaque identifier runs.
 - **D3 — Received-chain injection point** (`Provenance.gs`). Submission into a
-  provider SMTP relay from a host unrelated to the sending domain. Ships
-  **disabled** behind `ENABLE_RECEIVED_CHAIN`, and its relay allowlist ships
-  **empty** — a guessed entry permanently exempts a domain + relay pair an
-  attacker could then use, which is worse than no entry. `reportRelayPairs()`
-  prints the pairs actually present in your mail and `addRelayPair()` records
-  the ones you recognize, in Script Properties.
+  provider SMTP relay from a host unrelated to the sending domain. Its relay
+  allowlist ships **empty** — a guessed entry permanently exempts a domain +
+  relay pair an attacker could then use, which is worse than no entry.
+  `reportRelayPairs()` prints the pairs actually present in your mail and
+  `addRelayPair()` records the ones you recognize, in Script Properties.
+
+  D3 was written to ship disabled, and was **enabled the same day on
+  measurement**: `reportRelayPairs()` over 97 messages of real inbox+spam found
+  exactly one provider-relay submission, and it was the sabeng.it attack. An
+  independent 25-message Gmail API sample over 7 days found none. The five
+  allowlist entries originally drafted from assumption (Substack, KDP,
+  IngramSpark, Netlify, Amazon) would all have been noise — none of those
+  senders relays through a provider SMTP relay in this mailbox.
+
+  Known gap: `PROVIDER_RELAYS` covers Google's submission hosts well and
+  Microsoft's thinly. Exchange Online internal routing (`*.prod.outlook.com`)
+  is correctly not matched, but M365 submission paths have more host shapes than
+  Google's, so D3's coverage of Office 365 senders is weaker. That is a
+  false-negative gap, not a false-positive one.
+
+- `reportRelayPairs()` deliberately does not print a ready-to-paste
+  `addRelayPair()` call next to a flagged pair. The first real run flagged
+  exactly one pair and it was the phish; a copyable command to allowlist it
+  would have been a copyable command to disarm the detector.
 - **D4 — MUA fingerprint consistency** (`Fingerprint.gs`). Scored: html-only
   bodies, absent mailer headers, unrecognized Message-ID hosts, small-hours
   composition in the sender's own stated timezone.

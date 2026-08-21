@@ -13,8 +13,18 @@
  * "authenticated and anomalous" case in its purest form.
  */
 
-/** D3 is off until its allowlist has been tuned against live traffic. */
-let ENABLE_RECEIVED_CHAIN = false; // `let` so testDetection() can exercise it
+/**
+ * D3 is ON.
+ *
+ * Enabled 2026-08-21 on evidence, not assumption: reportRelayPairs() over 97
+ * messages of real inbox+spam found exactly one provider-relay submission, and
+ * it was the sabeng.it attack. An independent 25-message Gmail API sample over
+ * a 7-day window found none at all. Nothing legitimate in this mailbox enters a
+ * provider SMTP relay, so there is nothing for D3 to false-positive on.
+ *
+ * Re-run reportRelayPairs() if the mix of senders changes.
+ */
+let ENABLE_RECEIVED_CHAIN = true; // `let` so testDetection() can exercise it
 
 /**
  * Opt-in ASN/geo enrichment of the submission IP.
@@ -254,10 +264,16 @@ function reportRelayPairs() {
     const parts = key.split('|');
     const heloRoot = p.helo ? extractRootDomain(p.helo) : '';
     const wouldFlag = !p.allowed && heloRoot && heloRoot !== parts[0];
+    // Deliberately does NOT print a ready-to-paste addRelayPair() call for a
+    // flagged pair. A flagged pair is as likely to be the attack as it is to be
+    // a newsletter — the first run of this function flagged exactly one pair
+    // and it was the phish. Handing over the command to permanently allowlist
+    // it would be handing over the command to disarm the detector.
     Logger.log('  ' + key + '  x' + p.count + '  helo=' + (p.helo || '?') +
       (p.allowed ? '  [already allowlisted]'
-                 : (wouldFlag ? '  [D3 WOULD FLAG] addRelayPair("' + parts[0] +
-                                '", "' + parts[1] + '")'
+                 : (wouldFlag ? '  [D3 WOULD FLAG — review this sender. If you ' +
+                                'recognize it as legitimate, allowlist it with ' +
+                                'addRelayPair(); if you do not, leave it flagged.]'
                               : '  [would not flag]')));
   }
 }
