@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-08-23 — D5 false positive on calendar invitations
+
+A Google Calendar invitation for a podcast the owner had arranged scored 65
+(SPOOF-3-WATCH). Both D5 hits were structural properties of every invite, not
+signals:
+
+- **Redirect wrappers are now unwrapped before a link is judged.** Calendar
+  rewrites description links through `google.com/url?q=`, and Calendly wraps
+  user-supplied links through `calendly.com/url?q=` — so the anchor text named
+  the real target and the href named the redirector, which the anchor-mismatch
+  rule read as a lie. Unwrapping (up to 3 nested hops, only for
+  `D5_REDIRECT_ROOTS`) also strengthens the other rules: an open-redirect lure
+  is now judged on where it actually lands. Only known redirectors are
+  unwrapped — otherwise any phishing host could claim a brand by naming it in
+  its own `?url=` parameter.
+- **The recipient-in-URL rule is skipped for real invitations** (a
+  `text/calendar` part plus an ICS `METHOD:REQUEST|CANCEL|REPLY`). Calendar's
+  `eid` is base64 of "&lt;event id&gt; &lt;invitee address&gt;" — the invitee is
+  in the URL because that is how the invitation is addressed.
+
+Fixture #3 pins the case: without the fix it reproduces the exact 65 and both
+evidence lines. D4's no-mailer 10 still fires on invites, which is correct and
+harmless on its own.
+
 ## 2026-08-21 — v2: provenance and internal consistency
 
 **The v2 thesis.** v1 assumed spoofing shows up in the From header: a display

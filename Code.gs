@@ -673,6 +673,62 @@ function testDetection() {
       ].join('\n'),
     },
 
+    // ========================================================================
+    // Fixture #3 — a Google Calendar invitation, the shape v2 kept flagging.
+    //
+    // Received 2026-08-17, headers sanitized. Every invite trips D5 twice for
+    // structural reasons, not adversarial ones: Calendar rewrites description
+    // links through google.com/url (so the anchor names the real target and the
+    // href names the redirector), and the event link's eid is base64 of
+    // "<event id> <invitee address>" (so the recipient is in the URL by design).
+    // Score was 65 — above threshold — on a meeting the owner had arranged.
+    // ========================================================================
+    {
+      name: 'Fixture #3: Google Calendar invite with a Zoom link — legitimate, must stay clean',
+      from: '"TIMOTHY STATON" <tim@example-consulting.com>',
+      expectSpoof: false,
+      expectNoDetectors: ['D1', 'D5', 'owner-impersonation'],
+      raw: [
+        'Delivered-To: recipient@example.com',
+        'Return-Path: <tim@example-consulting.com>',
+        'Authentication-Results: mx.google.com;',
+        '       dkim=pass header.i=@google.com header.s=20251104;',
+        '       spf=none smtp.mailfrom=tim@example-consulting.com;',
+        'MIME-Version: 1.0',
+        'Sender: Google Calendar <calendar-notification@google.com>',
+        'Message-ID: <calendar-7c3801a1-431a-40ee-8e9a-afc199ab1b85@google.com>',
+        'Date: Mon, 17 Aug 2026 17:25:18 +0000',
+        'Subject: Invitation: Yoel and Tim @ Mon 31 Aug 2026 16:00 - 16:30 (GMT+3)',
+        'From: TIMOTHY STATON <tim@example-consulting.com>',
+        'To: recipient@example.com',
+        'Content-Type: multipart/mixed; boundary="000000000000cal"',
+        '',
+        '--000000000000cal',
+        'Content-Type: text/html; charset="UTF-8"',
+        '',
+        '<html><body>',
+        '<a href="https://www.google.com/url?q=https%3A%2F%2Fus05web.zoom.us%2Fj%2F83174442565&amp;sa=D&amp;source=calendar">https://us05web.zoom.us/j/83174442565</a>',
+        '<a href="https://www.google.com/url?q=https%3A%2F%2Fcalendly.com%2Furl%3Fq%3Dhttps%253A%252F%252Fexample-consulting.com&amp;sa=D&amp;source=calendar">https://example-consulting.com</a>',
+        // eid is base64 of "<event id> recipient@example.com" — the invitee is in
+        // the URL because that is how Calendar addresses the invitation.
+        '<a href="https://calendar.google.com/calendar/event?action=VIEW&amp;eid=MGwyZHUzNWsybDFlMGRxIcmVjaXBpZW50QGV4YW1wbGUuY29t">View all guest info</a>',
+        '</body></html>',
+        '--000000000000cal',
+        'Content-Type: text/calendar; charset="UTF-8"; method=REQUEST',
+        '',
+        'BEGIN:VCALENDAR',
+        'PRODID:-//Google Inc//Google Calendar 70.9054//EN',
+        'VERSION:2.0',
+        'METHOD:REQUEST',
+        'BEGIN:VEVENT',
+        'ORGANIZER;CN=TIMOTHY STATON:mailto:tim@example-consulting.com',
+        'ATTENDEE;CN=recipient@example.com:mailto:recipient@example.com',
+        'END:VEVENT',
+        'END:VCALENDAR',
+        '--000000000000cal--',
+      ].join('\n'),
+    },
+
     // --- D3/D4/D5 negatives: real legitimately-relayed mail must stay clean ---
     {
       name: 'D5 negative: genuine DocuSign envelope',

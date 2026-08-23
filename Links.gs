@@ -23,6 +23,17 @@ const D5_WEIGHTS = {
 const D5_MAX_LINKS = 50;
 
 /**
+ * Root domains whose /url?q= style endpoints are redirectors, not destinations.
+ * Google Calendar rewrites every link in an event description through
+ * google.com/url, and Calendly wraps user-supplied links through calendly.com/url,
+ * so judging the wrapper host answers the wrong question: the anchor text names
+ * the real target and the href names the redirector, which is not a mismatch.
+ * Unwrapping also strengthens the other rules — an open-redirect lure is then
+ * judged on where it actually lands.
+ */
+const D5_REDIRECT_ROOTS = ['google.com', 'calendly.com', 'outlook.com'];
+
+/**
  * Core CMS and application files that legitimately sit at web root. Without
  * this allowlist the root-script rule fires on every WordPress site on earth.
  */
@@ -133,6 +144,47 @@ function urlPath_(url) {
 }
 
 /**
+ * Follows redirect wrappers to the URL a click actually lands on.
+ * Only hosts on D5_REDIRECT_ROOTS are unwrapped: unwrapping anyone's ?url=
+ * param would let a phishing host claim a brand by naming it in a query string.
+ * @param {string} url
+ * @returns {string}
+ */
+function unwrapRedirect_(url) {
+  for (let i = 0; i < 3; i++) { // wrappers nest — Calendar wraps Calendly wraps the target
+    if (D5_REDIRECT_ROOTS.indexOf(extractRootDomain(urlHost_(url))) === -1) break;
+    const m = url.match(/[?&](?:q|url)=([^&]+)/i);
+    if (!m) break;
+    let inner;
+    try {
+      inner = decodeURIComponent(m[1]);
+    } catch (e) {
+      break;
+    }
+    if (!/^https?:\/\//i.test(inner)) break;
+    url = inner;
+  }
+  return url;
+}
+
+/**
+ * True when the message carries a real calendar invitation.
+ *
+ * An invite's own links identify the invitee by construction — Google Calendar's
+ * eid is base64 of "<event id> <invitee address>" — so the recipient-in-URL rule
+ * reads a structural fact as a targeting signal on every meeting invite.
+ *
+ * ponytail: a phisher can attach an ics to buy back those 30 points. Narrow to
+ * invite-host links only if that shows up.
+ * @param {Object} ctx
+ * @returns {boolean}
+ */
+function isCalendarInvite_(ctx) {
+  const raw = ctx.raw || '';
+  return /content-type:\s*text\/calendar/i.test(raw) && /^METHOD:(REQUEST|CANCEL|REPLY)/im.test(raw);
+}
+
+/**
  * Analyses the body's links.
  * @param {Object} ctx
  * @param {{displayName: string, email: string}} sender
@@ -152,9 +204,12 @@ function checkLinks_(ctx, sender, brandMatch) {
   const brandRoot = brandMatch ? extractRootDomain(brandMatch.domain) : '';
   const recipient = (ctx.header('delivered-to') || ctx.header('to') || '').toLowerCase();
 
+  const invite = isCalendarInvite_(ctx);
+
   const seen = {};
   for (const link of links) {
-    const host = urlHost_(link.href);
+    const href = unwrapRedirect_(link.href);
+    const host = urlHost_(href);
     if (!host) continue;
     const root = extractRootDomain(host);
     const relatedToSender = root === senderRoot || isRelatedBrandDomain(senderRoot, root);
@@ -163,7 +218,7 @@ function checkLinks_(ctx, sender, brandMatch) {
     // Bare script at web root on a host unrelated to the sender. This is the
     // two-compromised-hosts pattern: an authorized relay stitched to somebody
     // else's hacked CMS, where the kit lives at a path the real site never uses.
-    const pathMatch = urlPath_(link.href).match(D5_ROOT_SCRIPT_PATTERN);
+    const pathMatch = urlPath_(href).match(D5_ROOT_SCRIPT_PATTERN);
     if (pathMatch && !relatedToSender &&
         D5_ROOT_SCRIPT_ALLOWLIST.indexOf(pathMatch[1].toLowerCase()) === -1 &&
         !seen.rootScript) {
@@ -171,7 +226,7 @@ function checkLinks_(ctx, sender, brandMatch) {
       out.push(evidence_('D5', D5_WEIGHTS.rootScript,
         'Links to a bare script at the web root of ' + root +
         ', a host unrelated to the sender',
-        { details: 'Link: ' + defang(link.href) }));
+        { details: 'Link: ' + defang(href) }));
     }
 
     if (brandRoot && !relatedToBrand && !relatedToSender && !seen.unrelated) {
@@ -179,14 +234,14 @@ function checkLinks_(ctx, sender, brandMatch) {
       out.push(evidence_('D5', D5_WEIGHTS.unrelatedToBrand,
         'Message claims ' + brandRoot + ' but links to ' + root +
         ', which belongs to neither the brand nor the sender',
-        { details: 'Link: ' + defang(link.href) }));
+        { details: 'Link: ' + defang(href) }));
     }
 
-    if (recipient && !seen.recipient && urlCarriesRecipient_(link.href, recipient)) {
+    if (recipient && !invite && !seen.recipient && urlCarriesRecipient_(href, recipient)) {
       seen.recipient = true;
       out.push(evidence_('D5', D5_WEIGHTS.recipientInUrl,
         'Your address is encoded in the link target — the page knows who opened it',
-        { details: 'Link: ' + defang(link.href) }));
+        { details: 'Link: ' + defang(href) }));
     }
 
     // Anchor text naming a different domain than the link actually goes to.
@@ -197,7 +252,7 @@ function checkLinks_(ctx, sender, brandMatch) {
         seen.anchor = true;
         out.push(evidence_('D5', D5_WEIGHTS.anchorMismatch,
           'Link text says ' + claimedRoot + ' but the link goes to ' + root,
-          { details: 'Link: ' + defang(link.href) + ' | Text: ' + link.text }));
+          { details: 'Link: ' + defang(href) + ' | Text: ' + link.text }));
       }
     }
   }
