@@ -729,6 +729,59 @@ function testDetection() {
       ].join('\n'),
     },
 
+    // ========================================================================
+    // Fixture #4 — a Calendly booking notification, the ESP-bulk shape.
+    //
+    // Received 2026-08-24, headers verbatim except the recipient address and
+    // truncated tokens. A real discovery call the owner had booked scored 70
+    // (SPOOF-3-WATCH) on four signals that are all structural properties of
+    // transactional mail sent through an ESP: html-only with no X-Mailer (30),
+    // a SendGrid Message-ID whose host is the bare internal hostname
+    // geopod-ismtpd-115 (10), and the recipient's address in the one-click
+    // unsubscribe link that RFC 8058 requires to identify them (30).
+    //
+    // Fixture #3's invite exemption does not reach this: a booking notification
+    // carries no text/calendar part, so the shape had to be fixed at the rule.
+    // ========================================================================
+    {
+      name: 'Fixture #4: Calendly booking notification — legitimate, must stay clean',
+      from: 'Kamila Adamatti <notifications@calendly.com>',
+      expectSpoof: false,
+      ownerDomain: 'theroadtlv.com',
+      enableReceivedChain: true,
+      expectNoDetectors: ['D1', 'D3', 'D5', 'owner-impersonation'],
+      raw: [
+        'Delivered-To: recipient@example.com',
+        'Return-Path: <bounces+13766497-6687-recipient=example.com@em1618.calendly.com>',
+        'Received: from o3.sg.calendly.com (o3.sg.calendly.com. [149.72.248.16])',
+        '        by mx.google.com with ESMTPS id 6a1803df08f44-90c935c3c90si5936071;',
+        '        Mon, 24 Aug 2026 04:30:42 -0700 (PDT)',
+        'Received: from MTM3NjY0OTc (unknown) by geopod-ismtpd-115 (SG) with HTTP id',
+        '        I7HL0VjBS5OIEGXAWK3D1Q Mon, 24 Aug 2026 11:30:40.670 +0000 (UTC)',
+        'Authentication-Results: mx.google.com;',
+        '       dkim=pass header.i=@calendly.com header.s=d header.b=cqFH8aph;',
+        '       spf=pass (google.com: domain of bounces+13766497-6687-recipient=example.com@em1618.calendly.com designates 149.72.248.16 as permitted sender) smtp.mailfrom="bounces+13766497-6687-recipient=example.com@em1618.calendly.com";',
+        '       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=calendly.com',
+        'DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=calendly.com; s=d; b=cqFH8aph',
+        'Message-ID: <I7HL0VjBS5OIEGXAWK3D1Q@geopod-ismtpd-115>',
+        'Date: Mon, 24 Aug 2026 11:30:40 +0000 (UTC)',
+        'Subject: Yoel - Discovery Call (30 min) with Kamila Adamatti',
+        'From: Kamila Adamatti <notifications@calendly.com>',
+        'Reply-To: kamila@toneupbusiness.example',
+        'To: Yoel Frischoff <recipient@example.com>',
+        'List-Unsubscribe: <https://calendly.com/notification_subscriptions/2bc0447e/opt_out?recipient_email=recipient%40example.com&opt_out_method=1-click>',
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=us-ascii',
+        'Content-Transfer-Encoding: quoted-printable',
+        '',
+        '<html><body>',
+        '<p>A new event has been scheduled.</p>',
+        '<a href=3D"https://calendly.com/events/23341a35-d67e-4633-9d54-bf70f85a523e">View event</a>',
+        '<a href=3D"https://calendly.com/notification_subscriptions/2bc0447e/opt_out?recipient_email=3Drecipient%40example.com">Unsubscribe</a>',
+        '</body></html>',
+      ].join('\n'),
+    },
+
     // --- D3/D4/D5 negatives: real legitimately-relayed mail must stay clean ---
     {
       name: 'D5 negative: genuine DocuSign envelope',
@@ -859,6 +912,51 @@ function testDetection() {
         '',
         '<html><body><a href="https://app.netlify.com/sites/example/forms">View submission</a></body></html>',
         '------=_Part_4--',
+      ].join('\n'),
+    },
+
+    {
+      // Guards the narrowing above: the recipient-in-URL rule still fires when
+      // the address is handed to a host the sender has nothing to do with.
+      name: 'D5 positive: recipient address in a link to an unrelated host (scored)',
+      from: '"Mail Team" <alerts@ordinary-firm.example>',
+      expectSpoof: false,
+      expectDetectors: ['D5'],
+      raw: [
+        'From: "Mail Team" <alerts@ordinary-firm.example>',
+        'Delivered-To: recipient@example.com',
+        'To: recipient@example.com',
+        'Message-ID: <r1@ordinary-firm.example>',
+        'Date: Tue, 18 Aug 2026 09:11:00 -0400',
+        'X-Mailer: Notifier',
+        'Content-Type: multipart/alternative; boundary="b"',
+        '',
+        '--b',
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        '<html><body><a href="https://unrelated-host.example/verify?u=recipient@example.com">Verify</a></body></html>',
+        '--b--',
+      ].join('\n'),
+    },
+    {
+      name: 'D5 negative: recipient address in a link back to the sender\'s own domain',
+      from: '"Mail Team" <alerts@ordinary-firm.example>',
+      expectSpoof: false,
+      expectNoDetectors: ['D5'],
+      raw: [
+        'From: "Mail Team" <alerts@ordinary-firm.example>',
+        'Delivered-To: recipient@example.com',
+        'To: recipient@example.com',
+        'Message-ID: <r2@ordinary-firm.example>',
+        'Date: Tue, 18 Aug 2026 09:11:00 -0400',
+        'X-Mailer: Notifier',
+        'Content-Type: multipart/alternative; boundary="b"',
+        '',
+        '--b',
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        '<html><body><a href="https://ordinary-firm.example/opt_out?recipient_email=recipient%40example.com">Unsubscribe</a></body></html>',
+        '--b--',
       ].join('\n'),
     },
 

@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-08-24 — D5 + D4 false positive on ESP transactional mail
+
+A Calendly booking notification for a call the owner had booked scored 70
+(SPOOF-3-WATCH). All four signals are structural properties of transactional
+mail sent through an ESP, not evidence:
+
+- **The recipient-in-URL rule now requires a host unrelated to the sender.**
+  Your address in a link back to the domain that signed the message is that
+  sender addressing you — every bulk mailer puts it in the unsubscribe link, and
+  RFC 8058 one-click *requires* the link to identify the recipient. The signal
+  the rule exists for is a kit on somebody else's host pre-filling your address
+  on a login page, which is unchanged. Fixture #1 still fires it.
+- **A Message-ID host with no dot is no longer a signal.** SendGrid stamps
+  `<...@geopod-ismtpd-115>` — the generator's internal hostname, not a domain.
+  It can agree with nothing, so it says nothing. `sendgrid.net` was already on
+  the known-generator list and never matched, because SendGrid does not use it
+  here.
+
+D4's html-only + no-mailer 30 still fires and is correct: this really is
+script-assembled mail. It stays below the 50 threshold on its own, which is the
+behaviour Fixture #2 was pinned to guard.
+
+Fixture #3's invite exemption could not reach this — a booking notification
+carries no `text/calendar` part — so both fixes are at the rule, not the shape.
+Fixture #4 pins the case: without them it reproduces the exact 70 and all four
+evidence lines. Two smaller cases guard the narrowing in both directions.
+64/64 pass.
+
 ## 2026-08-23 — D5 false positive on calendar invitations
 
 A Google Calendar invitation for a podcast the owner had arranged scored 65

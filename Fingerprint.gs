@@ -69,7 +69,11 @@ function checkMuaFingerprint_(ctx, sender) {
     const known = D4_KNOWN_MESSAGE_ID_HOSTS.some(function (h) {
       return idHost === h || idHost.endsWith('.' + h);
     });
-    if (idHost && !known && extractRootDomain(idHost) !== senderRoot) {
+    // A host with no dot is the generator's own internal hostname (SendGrid's
+    // geopod-ismtpd-115, Postfix's mail01), not a domain. It can agree with
+    // nothing, so it says nothing.
+    if (idHost && idHost.indexOf('.') !== -1 && !known &&
+        extractRootDomain(idHost) !== senderRoot) {
       out.push(evidence_('D4', D4_WEIGHTS.messageIdHost,
         'Message-ID host ' + idHost + ' matches neither the sending domain nor a ' +
         'known mail generator',

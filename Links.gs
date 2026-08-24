@@ -237,7 +237,13 @@ function checkLinks_(ctx, sender, brandMatch) {
         { details: 'Link: ' + defang(href) }));
     }
 
-    if (recipient && !invite && !seen.recipient && urlCarriesRecipient_(href, recipient)) {
+    // Only on a host unrelated to the sender. Your address in a link back to
+    // the domain that signed the message is that sender addressing you — every
+    // bulk mailer puts it in the unsubscribe link, and RFC 8058 one-click
+    // requires the link to identify the recipient. The signal the rule is for
+    // is a kit on someone else's host pre-filling your address on a login page.
+    if (recipient && !invite && !seen.recipient && !relatedToSender &&
+        urlCarriesRecipient_(href, recipient)) {
       seen.recipient = true;
       out.push(evidence_('D5', D5_WEIGHTS.recipientInUrl,
         'Your address is encoded in the link target — the page knows who opened it',

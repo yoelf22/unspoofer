@@ -44,7 +44,7 @@ star only.
 | **D2** | Display-name obfuscation (`DisplayName.gs`) | scored | Names over 60 characters (the real address never renders on a phone), pseudo-directory syntax (`EN=`, `LAN=`), an embedded address on a different domain, long opaque identifier runs. |
 | **D3** | Received-chain injection (`Provenance.gs`) | hard, **on** | Submission into a provider SMTP relay from a host unrelated to the sending domain. This is the compromised-tenant pattern. |
 | **D4** | MUA fingerprint (`Fingerprint.gs`) | scored | `text/html` with no `multipart/alternative`, no `X-Mailer` and no `User-Agent`, a Message-ID host matching neither the sender nor a known generator, composition in the small hours of the sender's own stated timezone. |
-| **D5** | Link analysis (`Links.gs`) | hard | A bare script at the web root of an unrelated host (`/dc.php`), links unrelated to both the claimed brand and the sender, your address encoded into the URL, anchor text disagreeing with the href. **Parse only — never fetches.** |
+| **D5** | Link analysis (`Links.gs`) | hard | A bare script at the web root of an unrelated host (`/dc.php`), links unrelated to both the claimed brand and the sender, your address encoded into the URL of an unrelated host, anchor text disagreeing with the href. **Parse only — never fetches.** |
 
 Plus the v1 checks, unchanged: abused sending platforms (`firebaseapp.com`),
 platform DKIM selectors on custom domains (Firebase's `firebase1`), owner-domain
