@@ -201,7 +201,17 @@ function checkLinks_(ctx, sender, brandMatch) {
   // against, and every rule below would fire on ordinary mail. Under-flag.
   if (!senderRoot) return out;
 
-  const brandRoot = brandMatch ? extractRootDomain(brandMatch.domain) : '';
+  // A brand sending its own mail links to its own social profiles, help centre
+  // and sibling domains — Zoom's zoom.us notifications link to zoom.com,
+  // linkedin.com and youtube.com, all legitimately. "Claims X but links
+  // elsewhere" only carries signal when the sender is NOT X; when it is, the
+  // rule degenerates into "a brand may only link to itself" and fires on every
+  // legitimate brand notification. Drop the brand and let the sender-relative
+  // rules (root script, recipient-in-URL, anchor mismatch) do the work.
+  let brandRoot = brandMatch ? extractRootDomain(brandMatch.domain) : '';
+  if (brandRoot && (brandRoot === senderRoot || isRelatedBrandDomain(brandRoot, senderRoot))) {
+    brandRoot = '';
+  }
   const recipient = (ctx.header('delivered-to') || ctx.header('to') || '').toLowerCase();
 
   const invite = isCalendarInvite_(ctx);

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-08-25 — D5 false positive on a brand's own transactional mail
+
+A Zoom "someone joined your meeting room" notification scored 60
+(SPOOF-3-WATCH) on nothing but its footer. Display name "Zoom" resolves to the
+brand `zoom.us`, the sender **is** `zoom.us`, and the footer links to
+`zoom.com`, `linkedin.com`, `twitter.com`, `facebook.com`, `youtube.com` and
+`google.com/maps` — none of which is "the brand", so the unrelated-to-brand
+rule fired on the first one it reached.
+
+**D5's unrelated-to-brand rule now stands down when the sender is the brand.**
+"Claims X but links elsewhere" only carries signal when the sender is *not* X.
+When it is, the rule degenerates into "a brand may only ever link to itself",
+which is false for every brand footer in existence. The sender-relative rules
+(root script, recipient-in-URL, anchor mismatch) are untouched and still cover
+this message; Fixture #1, where the sender is `sabeng.it` and the claimed brand
+is DocuSign, still fires the rule.
+
+Adding `zoom.com` to a brand group would have cleared this one message and left
+every other brand's social footer flagged — and `linkedin.com` would simply have
+fired next. Fixed at the rule.
+
+D4's html-only + no-mailer 30 remains and is correct. Fixture #5 pins the case.
+65/65 pass.
+
 ## 2026-08-24 — D5 + D4 false positive on ESP transactional mail
 
 A Calendly booking notification for a call the owner had booked scored 70

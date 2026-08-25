@@ -674,6 +674,72 @@ function testDetection() {
     },
 
     // ========================================================================
+    // Fixture #5 — a Zoom notification, the "brand mails you about itself" shape.
+    //
+    // Received 2026-08-25, headers verbatim, body reduced to its links. Scored
+    // 60 WATCH on nothing but its footer: the display name "Zoom" resolves to
+    // the brand zoom.us, the sender IS zoom.us, and the footer links to
+    // zoom.com, linkedin.com, twitter.com, facebook.com, youtube.com and
+    // google.com/maps — none of them "the brand", so D5's unrelated-to-brand
+    // rule fired on the first one it reached.
+    //
+    // The rule only means something when the sender is NOT the brand it claims.
+    // Adding zoom.com to a brand group would have fixed this one message and
+    // left every other brand's social footer still flagged.
+    // ========================================================================
+    {
+      name: 'Fixture #5: Zoom notification with a social footer — legitimate, must stay clean',
+      from: 'Zoom <no-reply@zoom.us>',
+      expectSpoof: false,
+      ownerDomain: 'theroadtlv.com',
+      enableReceivedChain: true,
+      expectDetectors: ['D4'],
+      expectNoDetectors: ['D1', 'D2', 'D3', 'D5', 'owner-impersonation'],
+      raw: [
+        'Delivered-To: yoel@theroadtlv.com',
+        'Received: by 2002:aa7:dc0b:0:b0:6a2:d1d:9e42 with SMTP id b11csp5187415edu;',
+        '        Tue, 25 Aug 2026 01:44:37 -0700 (PDT)',
+        'Return-Path: <bounces+15636778-826c-yoel=theroadtlv.com@bounce-sg.zoom.us>',
+        'Received: from o33.sg.zoom.us (o33.sg.zoom.us. [159.183.179.39])',
+        '        by mx.google.com with ESMTPS id 41be03b00d2f7-cc199dd3beesi12462846a12.22;',
+        '        Tue, 25 Aug 2026 01:44:37 -0700 (PDT)',
+        'Authentication-Results: mx.google.com;',
+        '       dkim=pass header.i=@zoom.us header.s=sg header.b="CMb3gv7/";',
+        '       spf=pass (google.com: domain of bounces+15636778-826c-yoel=theroadtlv.com@bounce-sg.zoom.us designates 159.183.179.39 as permitted sender) smtp.mailfrom="bounces+15636778-826c-yoel=theroadtlv.com@bounce-sg.zoom.us";',
+        '       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=zoom.us',
+        'DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=zoom.us; s=sg; b=CMb3gv7/PCR1',
+        'Received: by recvd-d665d4899-stjgp with SMTP id recvd-d665d4899-stjgp-1-6A8D55F3-5D',
+        '\t2026-08-25 08:44:35.956472755 +0000 UTC m=+2382678.155411352',
+        'Received: from MTU2MzY3Nzg (unknown)',
+        '\tby geopod-ismtpd-90 (SG) with HTTP',
+        '\tid MEXFlPJEQMyxt95Y9c3o1w',
+        '\tTue, 25 Aug 2026 08:44:35.913 +0000 (UTC)',
+        'Content-Transfer-Encoding: quoted-printable',
+        'Content-Type: text/html; charset=iso-8859-1',
+        'Date: Tue, 25 Aug 2026 08:44:35 +0000 (UTC)',
+        'From: Zoom <no-reply@zoom.us>',
+        'Message-ID: <MEXFlPJEQMyxt95Y9c3o1w@geopod-ismtpd-90>',
+        'Subject: Anatoly Zimin has joined your Personal Meeting Room',
+        'Feedback-ID: -_pwQUbxR8Koela9eQb97Q:::zoom.us',
+        'To: yoel@theroadtlv.com',
+        '',
+        '<html><body>',
+        '<a href=3D"https://zoom.com"><img src=3D"https://file-paa.zoom.us/Iqcx/Zoom_L=',
+        'ogo_Bloom_RGB.png" alt=3D"Logo" /></a>',
+        '<a href=3D"https://us02web.zoom.us/s/7719754254">Start Meeting</a>',
+        '<a href=3D"https://www.linkedin.com/company/zoom/">LinkedIn</a>',
+        '<a href=3D"https://twitter.com/zoom">X</a>',
+        '<a href=3D"https://www.facebook.com/zoom">Facebook</a>',
+        '<a href=3D"https://www.youtube.com/@Zoom">YouTube</a>',
+        '<a href=3D"https://blog.zoom.us/">Blog</a>',
+        '<a href=3D"https://zoom.com" target=3D"_blank">Zoom.com</a>',
+        '<a href=3D"https://www.google.com/maps/place/55+Almaden+Blvd,+San+Jose,+CA+95=',
+        '113" target=3D"_blank">55 Almaden Blvd<br/>San Jose, CA 95113</a>',
+        '</body></html>',
+      ].join('\n'),
+    },
+
+    // ========================================================================
     // Fixture #3 — a Google Calendar invitation, the shape v2 kept flagging.
     //
     // Received 2026-08-17, headers sanitized. Every invite trips D5 twice for
