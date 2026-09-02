@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-09-02 — D5 anchor-mismatch false positive on calendar invites
+
+A Google Calendar invitation for a podcast recording scored 65
+(SPOOF-3-WATCH). The organizer had typed the Zoom URL into the event's
+Location field. Calendar renders a location as a Maps search link, so the
+anchor text said `zoom.us` and the href said `google.com/maps/search/?query=…`
+— exactly the shape the anchor-mismatch rule looks for, on a meeting the owner
+had arranged himself. (The recipient-in-URL half of that score was already
+fixed on 2026-08-23.)
+
+**D5's anchor-mismatch rule now stands down on calendar invites**, the same
+`isCalendarInvite_` gate the recipient-in-URL rule already uses. Calendar
+rewrites every anchor it renders — description links through `google.com/url`,
+locations through `google.com/maps/search` — so on an invite the text names
+the real target and the href names Google, always. Fixture #3 gains the
+Location-field shape and fails on the old code.
+
+"Zoom" is what people call a video call, and a meeting link in the Location
+field is how most of them send it. The rule is untouched outside invites.
+
 ## 2026-08-25 — D5 false positive on a brand's own transactional mail
 
 A Zoom "someone joined your meeting room" notification scored 60

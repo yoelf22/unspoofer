@@ -261,8 +261,13 @@ function checkLinks_(ctx, sender, brandMatch) {
     }
 
     // Anchor text naming a different domain than the link actually goes to.
+    // Not on invites: Calendar rewrites every anchor it renders — description
+    // links through google.com/url, and a Zoom URL typed into the Location
+    // field becomes a google.com/maps/search link — so the text names the
+    // real target and the href names Google. That is the rule's exact shape,
+    // on every legitimate invite with a meeting link.
     const claimed = link.text.match(/\b([a-z0-9][-a-z0-9]*\.)+[a-z]{2,}\b/i);
-    if (claimed && !seen.anchor) {
+    if (claimed && !invite && !seen.anchor) {
       const claimedRoot = extractRootDomain(claimed[0]);
       if (claimedRoot !== root && !isRelatedBrandDomain(claimedRoot, root)) {
         seen.anchor = true;

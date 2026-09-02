@@ -774,6 +774,10 @@ function testDetection() {
         '',
         '<html><body>',
         '<a href="https://www.google.com/url?q=https%3A%2F%2Fus05web.zoom.us%2Fj%2F83174442565&amp;sa=D&amp;source=calendar">https://us05web.zoom.us/j/83174442565</a>',
+        // A Zoom URL in the Location field: Calendar wraps it in a Maps search,
+        // which unwrapRedirect_ cannot see through — the anchor says zoom.us,
+        // the href says google.com. Flagged a real podcast invite on 2026-08-23.
+        '<a href="https://www.google.com/maps/search/?api=1&amp;query=https://us05web.zoom.us/j/83174442565">https://us05web.zoom.us/j/83174442565</a>',
         '<a href="https://www.google.com/url?q=https%3A%2F%2Fcalendly.com%2Furl%3Fq%3Dhttps%253A%252F%252Fexample-consulting.com&amp;sa=D&amp;source=calendar">https://example-consulting.com</a>',
         // eid is base64 of "<event id> recipient@example.com" — the invitee is in
         // the URL because that is how Calendar addresses the invitation.
