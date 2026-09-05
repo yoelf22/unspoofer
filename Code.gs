@@ -459,6 +459,49 @@ function testDetection() {
       expectSpoof: false,
     },
     {
+      name: 'D6: named editor appends claimed publisher to an AOL address',
+      from: '"Orla King" <orlaking.panmacmillan@aol.com>',
+      expectSpoof: true,
+      expectDetectors: ['D6'],
+      raw: [
+        'From: "Orla King" <orlaking.panmacmillan@aol.com>',
+        'To: author@example.com',
+        'Subject: Tangibles',
+        'Message-ID: <publisher-outreach@aol.com>',
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        'I recently spent some time with Tangibles: How Software Turns Hardware into Platforms.',
+        'I am a Senior Editor at Pan Macmillan.',
+        'Are you working on anything new, and are you represented by a literary agent?',
+        '',
+        'Best,',
+        'Orla King',
+        'Senior Editor',
+        'Pan Macmillan',
+      ].join('\n'),
+    },
+    {
+      name: 'D6 negative: ordinary personal AOL address leaves no organization token',
+      from: '"Orla King" <orla.king@aol.com>',
+      expectSpoof: false,
+      expectNoDetectors: ['D6'],
+      raw: 'From: "Orla King" <orla.king@aol.com>\n\nI am an editor at Pan Macmillan.',
+    },
+    {
+      name: 'D6 negative: appended newsletter label without an affiliation claim',
+      from: '"Orla King" <orlaking.newsletter@aol.com>',
+      expectSpoof: false,
+      expectNoDetectors: ['D6'],
+      raw: 'From: "Orla King" <orlaking.newsletter@aol.com>\n\nThis is my newsletter about publishing.',
+    },
+    {
+      name: 'D6 negative: organization-like address on its own domain is not freemail',
+      from: '"Orla King" <orlaking.panmacmillan@panmacmillan.com>',
+      expectSpoof: false,
+      expectNoDetectors: ['D6'],
+      raw: 'From: "Orla King" <orlaking.panmacmillan@panmacmillan.com>\n\nI am an editor at Pan Macmillan.',
+    },
+    {
       name: 'Legitimate Gett multi-TLD display name (.business is a gTLD)',
       from: '"Gett.Business" <noreply@business-news.gett.com>',
       expectSpoof: false,
@@ -849,6 +892,74 @@ function testDetection() {
         '<a href=3D"https://calendly.com/events/23341a35-d67e-4633-9d54-bf70f85a523e">View event</a>',
         '<a href=3D"https://calendly.com/notification_subscriptions/2bc0447e/opt_out?recipient_email=3Drecipient%40example.com">Unsubscribe</a>',
         '</body></html>',
+      ].join('\n'),
+    },
+
+    // ========================================================================
+    // Fixture #6 — a Klaviyo order confirmation, the ecommerce-ESP shape.
+    //
+    // Received 2026-09-05. Message-ID, Date, Subject and From verbatim; the
+    // recipient address is replaced and the Received chain is reduced to the
+    // Gmail boundary hop. A real Kideo order confirmation scored exactly 50
+    // (SPOOF-3-WATCH) on three signals: the recipient's address in the
+    // manage.kmail-lists.com one-click unsubscribe link (30), no X-Mailer or
+    // User-Agent (10), and a Message-ID stamped @klaviyomail.com — the
+    // generator's own host, which D4 did not know (10).
+    //
+    // klaviyomail.com is Klaviyo's sending host: every store on Klaviyo
+    // stamps its Message-IDs there, so it belongs in
+    // D4_KNOWN_MESSAGE_ID_HOSTS beside SendGrid and Mailchimp.
+    //
+    // The recipient-in-URL hit is the RFC 8058 shape: the real message carries
+    // List-Unsubscribe naming manage.kmail-lists.com with the recipient in it,
+    // plus List-Unsubscribe-Post: List-Unsubscribe=One-Click. The rule now
+    // stands down for hosts the List-Unsubscribe header declares — the
+    // sender's own statement of where its list-manage endpoint lives, so no
+    // ESP allowlist. This message scores 10 (D4 only) and stays clean.
+    // ========================================================================
+    {
+      name: 'Fixture #6: Klaviyo order confirmation — legitimate, must stay clean',
+      from: 'Kideo <contact@kideo.ch>',
+      expectSpoof: false,
+      ownerDomain: 'theroadtlv.com',
+      enableReceivedChain: true,
+      expectDetectors: ['D4'],
+      expectNoDetectors: ['D1', 'D2', 'D3', 'D5', 'owner-impersonation'],
+      raw: [
+        'Delivered-To: recipient@example.com',
+        'List-Unsubscribe:',
+        ' <https://manage.kmail-lists.com/subscriptions/unsubscribe?a=V8MCz4&k=8f978ae2c25550db435e7992e00157a7&se=recipient%40example.com>,',
+        ' <mailto:unsub1-01M1RGPMA65EBT26PP731G7XJM@shared.klaviyomail.com?subject=request%20unsubscribe>',
+        'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
+        'Return-Path: <bounces+8012345-67ab-recipient=example.com@klaviyomail.com>',
+        'Received: from mail.klaviyomail.com (mail.klaviyomail.com. [205.201.128.0])',
+        '        by mx.google.com with ESMTPS id a1b2c3d4e5f6;',
+        '        Sat, 5 Sep 2026 03:11:38 -0700 (PDT)',
+        'Authentication-Results: mx.google.com;',
+        '       dkim=pass header.i=@kideo.ch header.s=kl1;',
+        '       spf=pass smtp.mailfrom=bounces+8012345-67ab-recipient=example.com@klaviyomail.com;',
+        '       dmarc=pass (p=NONE) header.from=kideo.ch',
+        'Message-ID: <01M1RGTQ4S5XBNBE81ZS25WMF4@klaviyomail.com>',
+        'Date: Sat, 05 Sep 2026 10:11:38 +0000',
+        'Subject: Your order is confirmed',
+        'From: Kideo <contact@kideo.ch>',
+        'To: recipient@example.com',
+        'MIME-Version: 1.0',
+        'Content-Type: multipart/alternative; boundary="----=_Part_42"',
+        '',
+        '------=_Part_42',
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        'Your order is confirmed. View your order: https://ctrk.klclick1.com/l/01M1RGTRWRD7BTNH14Z71ADDP7_0',
+        '------=_Part_42',
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        '<html><body>',
+        '<p>Your order is confirmed.</p>',
+        '<a href="https://ctrk.klclick1.com/l/01M1RGTRWRD7BTNH14Z71ADDP7_0">View your order</a>',
+        '<a href="https://manage.kmail-lists.com/subscriptions/unsubscribe?a=V8MCz4&k=8f978ae2c25550db435e7992e00157a7&se=recipient%40example.com">Unsubscribe</a>',
+        '</body></html>',
+        '------=_Part_42--',
       ].join('\n'),
     },
 

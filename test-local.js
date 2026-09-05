@@ -13,7 +13,7 @@ const path = require('path');
 const vm = require('vm');
 
 // Load order matters: consts are in TDZ until their line executes.
-const FILES = ['Homoglyphs.gs', 'Headers.gs', 'Brands.gs', 'DisplayName.gs', 'Fingerprint.gs', 'Links.gs', 'Provenance.gs', 'SpoofDetector.gs', 'Code.gs'];
+const FILES = ['Homoglyphs.gs', 'Headers.gs', 'Brands.gs', 'DisplayName.gs', 'Fingerprint.gs', 'Links.gs', 'Identity.gs', 'Provenance.gs', 'SpoofDetector.gs', 'Code.gs'];
 
 const source = FILES
   .filter((f) => fs.existsSync(path.join(__dirname, f)))

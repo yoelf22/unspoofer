@@ -31,6 +31,7 @@ const D4_KNOWN_MESSAGE_ID_HOSTS = [
   'postmarkapp.com',
   'sparkpostmail.com',
   'mailgun.org',
+  'klaviyomail.com',
 ];
 
 /** Local hours that read as machine-scheduled rather than human-composed. */

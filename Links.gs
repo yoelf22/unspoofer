@@ -216,6 +216,14 @@ function checkLinks_(ctx, sender, brandMatch) {
 
   const invite = isCalendarInvite_(ctx);
 
+  // Root domains of the URLs the message itself declares as its list-manage
+  // endpoints. RFC 8058 one-click requires that URL to identify the recipient,
+  // and ESPs host it on their own domain (Klaviyo: manage.kmail-lists.com),
+  // which is unrelated to the brand that signed the mail. The header is the
+  // sender's own declaration, so no ESP allowlist is needed.
+  const listRoots = (ctx.header('list-unsubscribe').match(/https?:\/\/[^\s<>,]+/gi) || [])
+    .map((u) => extractRootDomain(urlHost_(u)));
+
   const seen = {};
   for (const link of links) {
     const href = unwrapRedirect_(link.href);
@@ -252,8 +260,10 @@ function checkLinks_(ctx, sender, brandMatch) {
     // bulk mailer puts it in the unsubscribe link, and RFC 8058 one-click
     // requires the link to identify the recipient. The signal the rule is for
     // is a kit on someone else's host pre-filling your address on a login page.
+    // A host the List-Unsubscribe header names is that sender's declared
+    // list-manage endpoint, not somebody else's host.
     if (recipient && !invite && !seen.recipient && !relatedToSender &&
-        urlCarriesRecipient_(href, recipient)) {
+        listRoots.indexOf(root) === -1 && urlCarriesRecipient_(href, recipient)) {
       seen.recipient = true;
       out.push(evidence_('D5', D5_WEIGHTS.recipientInUrl,
         'Your address is encoded in the link target — the page knows who opened it',

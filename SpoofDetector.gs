@@ -412,6 +412,7 @@ function collectSignals_(ctx, sender, brandMatch, evidence) {
   };
   pushAll(checkDisplayNameObfuscation_(sender));
   pushAll(checkMuaFingerprint_(ctx, sender));
+  pushAll(checkFreemailIdentityClaim_(ctx, sender));
   pushAll(checkReceivedChain_(ctx, sender));
   pushAll(checkLinks_(ctx, sender, brandMatch));
 }

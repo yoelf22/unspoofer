@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-09-05 — D5 recipient-in-URL stands down for declared list-manage hosts
+
+Fixture #6 (a Klaviyo order confirmation) scored 40 after the D4 fix, with 30
+of it the recipient's address in the `manage.kmail-lists.com` unsubscribe
+link — RFC 8058 one-click, which requires that URL to identify the recipient.
+The real message declares that host in `List-Unsubscribe` alongside
+`List-Unsubscribe-Post: List-Unsubscribe=One-Click`.
+
+The rule now skips any link whose root domain matches a URL in the message's
+own `List-Unsubscribe` header. No ESP allowlist: the header is the sender's
+statement of where its list-manage endpoint lives, and every ESP sets it.
+Fixture #6 drops to 10. Fixture #1's kit link (no `List-Unsubscribe`) still
+fires. Known ceiling: a kit that names its own host in `List-Unsubscribe`
+suppresses this one 30-point rule; D1–D4 and the root-script rule are
+unaffected.
+
+## 2026-09-03 — D6 freemail organizational-identity claims
+
+Added a brand-independent detector for the `person.organization@freemail`
+impersonation shape. D6 subtracts the normalized display name from the start of
+the local part, then requires the appended organization token to appear in an
+explicit `at` / `from` / `with` / `for` affiliation claim in the body. The
+signal weighs 60 and crosses the WATCH threshold on its own.
+
+This closes a miss where `"Orla King" <orlaking.panmacmillan@aol.com>` claimed
+`Senior Editor at Pan Macmillan` but scored only 10 from D4. It does not require
+Pan Macmillan, or any publisher, to be added to the static brand list. Negative
+fixtures pin ordinary personal freemail, incidental newsletter labels, and
+organization-owned domains.
+
 ## 2026-09-02 — D5 anchor-mismatch false positive on calendar invites
 
 A Google Calendar invitation for a podcast recording scored 65

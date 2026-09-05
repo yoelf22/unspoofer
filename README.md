@@ -45,6 +45,7 @@ star only.
 | **D3** | Received-chain injection (`Provenance.gs`) | hard, **on** | Submission into a provider SMTP relay from a host unrelated to the sending domain. This is the compromised-tenant pattern. |
 | **D4** | MUA fingerprint (`Fingerprint.gs`) | scored | `text/html` with no `multipart/alternative`, no `X-Mailer` and no `User-Agent`, a Message-ID host matching neither the sender nor a known generator, composition in the small hours of the sender's own stated timezone. |
 | **D5** | Link analysis (`Links.gs`) | hard | A bare script at the web root of an unrelated host (`/dc.php`), links unrelated to both the claimed brand and the sender, your address encoded into the URL of an unrelated host, anchor text disagreeing with the href. **Parse only — never fetches.** |
+| **D6** | Freemail identity claim (`Identity.gs`) | high-signal | A consumer freemail local part appends an organization to the sender's display-name token, and the body explicitly claims affiliation with that organization. Brand-list independent. |
 
 Plus the v1 checks, unchanged: abused sending platforms (`firebaseapp.com`),
 platform DKIM selectors on custom domains (Firebase's `firebase1`), owner-domain
@@ -199,6 +200,7 @@ Substack send, a WordPress password reset, a Netlify form notification.
 | `DisplayName.gs` | D2 — display-name obfuscation |
 | `Fingerprint.gs` | D4 — MUA fingerprint consistency |
 | `Links.gs` | D5 — link analysis and defanging. Parse only. |
+| `Identity.gs` | D6 — freemail local-part and body affiliation consistency |
 | `Provenance.gs` | D3 — Received-chain injection point, and the relay allowlist |
 | `SpoofDetector.gs` | Sender parsing, domain extraction, the detector chain, scoring |
 | `Cache.gs` | Processed message ID tracking (rolling 10K window) |
