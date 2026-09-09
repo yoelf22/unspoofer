@@ -335,6 +335,11 @@ function testDetection() {
       expectSpoof: true,
     },
     {
+      name: 'Roman-numeral Wix spoof (NFKC compatibility characters)',
+      from: '"W\u2170\u2179" <marketing@losportellino.org>',
+      expectSpoof: true,
+    },
+    {
       name: 'Cyrillic PayPal spoof',
       from: '"P\u0430yP\u0430l Security" <alerts@some-random.com>',
       expectSpoof: true,

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-09 — NFKC before the homoglyph map
+
+A "Wⅰⅹ" domain-expiry phish from `losportellino.org` (passing SPF, DKIM and
+DMARC) went unflagged. The display name spells Wix with U+2170 and U+2179 —
+the small roman numerals ⅰ and ⅹ — which the homoglyph map does not list, so
+normalization produced `wⅰⅹ`, no brand matched, and "wix" is below the
+near-miss length gates.
+
+`normalizeToAscii` now runs `String.prototype.normalize('NFKC')` before the
+map. NFKC folds every compatibility character — roman numerals, fullwidth
+Latin and digits, ligatures, circled and superscript letters — to plain
+ASCII, so the hand-built fullwidth loop is gone. The map keeps only the
+cross-script confusables (Cyrillic, Greek, dot variants) that NFKC leaves
+alone. New fixture: "Roman-numeral Wix spoof". 71/71 pass.
+
 ## 2026-09-05 — D5 recipient-in-URL stands down for declared list-manage hosts
 
 Fixture #6 (a Klaviyo order confirmation) scored 40 after the D4 fix, with 30

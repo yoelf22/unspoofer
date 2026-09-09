@@ -67,28 +67,11 @@ const HOMOGLYPH_MAP = {
   '\u03A7': 'x', // Χ
   '\u0396': 'z', // Ζ
 
-  // Fullwidth period
-  '\uFF0E': '.',
-
   // Common symbols
   '\u2024': '.', // one dot leader
   '\u2025': '..', // two dot leader
   '\u00B7': '.', // middle dot (sometimes used as period)
 };
-
-// Add fullwidth Latin letters (U+FF21-FF3A uppercase, U+FF41-FF5A lowercase)
-(function () {
-  for (let i = 0; i < 26; i++) {
-    // Fullwidth uppercase A-Z → lowercase a-z
-    HOMOGLYPH_MAP[String.fromCharCode(0xFF21 + i)] = String.fromCharCode(0x61 + i);
-    // Fullwidth lowercase a-z → lowercase a-z
-    HOMOGLYPH_MAP[String.fromCharCode(0xFF41 + i)] = String.fromCharCode(0x61 + i);
-  }
-  // Fullwidth digits 0-9
-  for (let i = 0; i < 10; i++) {
-    HOMOGLYPH_MAP[String.fromCharCode(0xFF10 + i)] = String.fromCharCode(0x30 + i);
-  }
-})();
 
 /**
  * Replaces homoglyph characters with ASCII equivalents and lowercases the result.
@@ -97,6 +80,10 @@ const HOMOGLYPH_MAP = {
  */
 function normalizeToAscii(str) {
   if (!str) return '';
+  // NFKC folds compatibility characters — fullwidth Latin, roman numerals
+  // (U+2170 "\u2170" is "i"), ligatures, circled letters — to plain ASCII. The
+  // map below handles the cross-script confusables NFKC leaves alone.
+  str = str.normalize('NFKC');
   let result = '';
   for (let i = 0; i < str.length; i++) {
     const ch = str[i];
