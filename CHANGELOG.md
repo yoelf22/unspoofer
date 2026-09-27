@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-27 — D5 root-script rule stands down for a host the message names
+
+A Click Print order confirmation scored 110 (SPOOF-2-HIGH). The hosted-shop
+platform e-shops.co.il signs the merchant's mail with its own domain (DKIM and
+SPF pass), and the order link is `clickprint.co.il/UserMyOrders.asp` — a bare
+classic-ASP script at web root on a host unrelated to the sender, which is the
+rule's exact shape.
+
+The subject names that host ("...התקבלה באתר clickprint.co.il"). The pattern the
+rule is for is a kit on somebody else's hacked CMS, and that lure never
+announces the hacked host. The rule now skips a link whose root domain appears
+in the Subject or From display name. New fixture: "order link on the site the
+subject names". 72/72 pass.
+
 ## 2026-09-09 — NFKC before the homoglyph map
 
 A "Wⅰⅹ" domain-expiry phish from `losportellino.org` (passing SPF, DKIM and

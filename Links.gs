@@ -216,6 +216,19 @@ function checkLinks_(ctx, sender, brandMatch) {
 
   const invite = isCalendarInvite_(ctx);
 
+  // Subject and From as the reader sees them. A hosted-shop platform signs a
+  // merchant's order mail with its own domain and names the merchant's site in
+  // the subject ("your order at clickprint.co.il"); the order page is a bare
+  // classic-ASP script on that site. A kit on a hacked CMS never names the
+  // hacked host, so a message that announces the host is not that pattern.
+  let subject = '';
+  try {
+    subject = (ctx.message && ctx.message.getSubject && ctx.message.getSubject()) || '';
+  } catch (e) {
+    subject = '';
+  }
+  const announced = (subject + ' ' + (ctx.from || '')).toLowerCase();
+
   // Root domains of the URLs the message itself declares as its list-manage
   // endpoints. RFC 8058 one-click requires that URL to identify the recipient,
   // and ESPs host it on their own domain (Klaviyo: manage.kmail-lists.com),
@@ -237,7 +250,9 @@ function checkLinks_(ctx, sender, brandMatch) {
     // two-compromised-hosts pattern: an authorized relay stitched to somebody
     // else's hacked CMS, where the kit lives at a path the real site never uses.
     const pathMatch = urlPath_(href).match(D5_ROOT_SCRIPT_PATTERN);
-    if (pathMatch && !relatedToSender &&
+    // ponytail: a lure that names its own kit host in the subject buys back the
+    // 100 points; require DKIM too if that ever shows up.
+    if (pathMatch && !relatedToSender && announced.indexOf(root) === -1 &&
         D5_ROOT_SCRIPT_ALLOWLIST.indexOf(pathMatch[1].toLowerCase()) === -1 &&
         !seen.rootScript) {
       seen.rootScript = true;

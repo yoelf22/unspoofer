@@ -1031,6 +1031,24 @@ function testDetection() {
       ].join('\n'),
     },
     {
+      // Hosted-shop platform (e-shops.co.il) sending a merchant's order
+      // confirmation; the subject names the merchant's site the ASP link is on.
+      name: 'D5 negative: order link on the site the subject names is not a kit path',
+      from: '"Click Print" <mailer@e-shops.co.il>',
+      subject: 'Order 3414 received at clickprint.co.il',
+      expectSpoof: false,
+      raw: [
+        'Authentication-Results: mx.google.com; dkim=pass header.i=@e-shops.co.il; spf=pass',
+        'Message-ID: <20260927-11565288-a3c@hP1GSa3e0M>',
+        'From: "Click Print" <mailer@e-shops.co.il>',
+        'To: recipient@example.com',
+        'Subject: Order 3414 received at clickprint.co.il',
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        '<p><a href="https://www.clickprint.co.il/UserMyOrders.asp?guid=28337A32">3414</a></p>',
+      ].join('\n'),
+    },
+    {
       name: 'D5 negative: WordPress core file at web root is not a kit path',
       from: '"Site Admin" <admin@somecms.example>',
       expectSpoof: false,
@@ -1275,6 +1293,7 @@ function testDetection() {
     // Build a mock GmailMessage that exercises the real checkForSpoof() code path
     const mockMessage = {
       getFrom: () => tc.from,
+      getSubject: () => tc.subject || '',
       getRawContent: () => tc.raw || tc.rawHeaders || '',
     };
     const result = checkForSpoof(mockMessage);
