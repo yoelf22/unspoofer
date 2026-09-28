@@ -745,7 +745,9 @@ function testDetection() {
         'Content-Type: text/html; charset="utf-8"',
         '',
         '<html><body><a href="https://iotdigest.substack.com/p/iot-news-digest-2639">Read in app</a>',
-        '<img src="https://eotrx.substackcdn.com/o/0000000000000000/p.gif?token=eyJyIjoicmVjaXBpZW50QGV4YW1wbGUuY29tIiwicCI6MjE3NTE4NTUyfQ" alt="" width="1" height="1"/>',
+        '<img src="https://eotrx.substackcdn.com/o/0000000000000000/p.gif?token=' +
+          // Built at run time so no token literal sits in the source.
+          Utilities.base64Encode('{"r":"recipient@example.com"}') + '" alt="" width="1" height="1"/>',
         '</body></html>',
       ].join('\n'),
     },
