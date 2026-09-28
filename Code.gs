@@ -722,6 +722,35 @@ function testDetection() {
     },
 
     // ========================================================================
+    // Substack newsletter open-tracking pixel. Received 2026-09-28 (IoT News
+    // Digest 2639), headers trimmed, body reduced to the pixel and one link.
+    // The pixel's JWT holds "r":"<recipient>" in base64, and the bare-URL pass
+    // read the <img src> as a link, so recipient-in-URL fired (30). A pixel is
+    // not something anyone clicks.
+    // ========================================================================
+    {
+      name: 'Substack newsletter tracking pixel — not a link, D5 must stay silent',
+      from: 'Yoel Frischoff from IoT News Digest <iotdigest@substack.com>',
+      expectSpoof: false,
+      expectNoDetectors: ['D5'],
+      raw: [
+        'Delivered-To: hello@theroadtlv.com',
+        'Authentication-Results: mx.google.com;',
+        '       dkim=pass header.i=@mg-d1.substack.com header.s=k1 header.b=FnxC77bW;',
+        '       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=substack.com',
+        'From: Yoel Frischoff from IoT News Digest <iotdigest@substack.com>',
+        'To: hello@theroadtlv.com',
+        'Subject: IoT News Digest 2639',
+        'List-Unsubscribe: <https://iotdigest.substack.com/action/disable_email/disable?token=eyJ1c2VyX2lk>',
+        'Content-Type: text/html; charset="utf-8"',
+        '',
+        '<html><body><a href="https://iotdigest.substack.com/p/iot-news-digest-2639">Read in app</a>',
+        '<img src="https://eotrx.substackcdn.com/o/a9c1b3227d1c7ba4/p.gif?token=eyJtIjoiPDIwMjYwOTI4MDUzMDU4LjMuZDE4ZjZiNTU1ZGQ0MDlkY0BtZy1kMS5zdWJzdGFjay5jb20-IiwidSI6NDg4MDEwODQ2LCJyIjoiaGVsbG9AdGhlcm9hZHRsdi5jb20iLCJkIjoibWctZDEuc3Vic3RhY2suY29tIn0.tW8vTYUe" alt="" width="1" height="1"/>',
+        '</body></html>',
+      ].join('\n'),
+    },
+
+    // ========================================================================
     // Fixture #5 — a Zoom notification, the "brand mails you about itself" shape.
     //
     // Received 2026-08-25, headers verbatim, body reduced to its links. Scored

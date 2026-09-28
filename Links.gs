@@ -114,8 +114,13 @@ function extractLinks_(body) {
 
   // Bare URLs, so a text/plain lure is analysed too. Anchors are collected
   // first, so a URL that already appeared as an href keeps its anchor text.
+  // Tags are stripped first: a URL inside an attribute is not a link. Substack's
+  // open-tracking pixel (<img src=...p.gif?token=>) carries the recipient in its
+  // token, and read as a link it fired recipient-in-URL on every newsletter.
+  // The (?!https?:) keeps plain-text <https://...> URLs, which look like tags.
+  const text = body.replace(/<(?!https?:)\/?[a-z!][^>]*>/gi, ' ');
   const bare = /(?:^|[\s<>"'])(https?:\/\/[^\s<>"']+)/gi;
-  while ((m = bare.exec(body)) !== null) {
+  while ((m = bare.exec(text)) !== null) {
     add(m[1], '');
   }
 
