@@ -34,6 +34,17 @@ const D5_MAX_LINKS = 50;
 const D5_REDIRECT_ROOTS = ['google.com', 'calendly.com', 'outlook.com'];
 
 /**
+ * ESP click-tracking hosts. SendGrid rewrites every href to
+ * uNNN.ct.sendgrid.net/ls/click?upn=<opaque token>, so the real target can't be
+ * unwrapped and every link rule would judge the ESP instead of the sender.
+ * Links through these hosts are skipped.
+ *
+ * ponytail: a phisher on a hijacked SendGrid account rides through D5 here;
+ * D1/D2/D3 still see the sender. Resolve the tracker server-side if that shows up.
+ */
+const D5_ESP_TRACKER_ROOTS = ['sendgrid.net', 'resend.com', 'resend.dev'];
+
+/**
  * Core CMS and application files that legitimately sit at web root. Without
  * this allowlist the root-script rule fires on every WordPress site on earth.
  */
@@ -248,6 +259,7 @@ function checkLinks_(ctx, sender, brandMatch) {
     const host = urlHost_(href);
     if (!host) continue;
     const root = extractRootDomain(host);
+    if (D5_ESP_TRACKER_ROOTS.indexOf(root) !== -1) continue;
     const relatedToSender = root === senderRoot || isRelatedBrandDomain(senderRoot, root);
     const relatedToBrand = brandRoot && (root === brandRoot || isRelatedBrandDomain(brandRoot, root));
 

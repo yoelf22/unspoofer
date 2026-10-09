@@ -932,6 +932,35 @@ function testDetection() {
     },
 
     // ========================================================================
+    // Fixture #7 — a SendGrid-sent webinar invite (rndsquare.co, 2026-10-09).
+    // Scored 55 (SPOOF-3-WATCH): html-only + no X-Mailer (30) and "link text
+    // says rndsquare.com but the link goes to sendgrid.net" (25). SendGrid's
+    // click tracking replaces every href with an opaque ct.sendgrid.net token,
+    // so D5 now skips ESP tracker hosts. Shape reconstructed from the report.
+    // ========================================================================
+    {
+      name: 'Fixture #7: SendGrid click-tracked webinar invite — must stay clean',
+      from: 'Jibi Thomas <jibi.thomas@rndsquare.co>',
+      expectSpoof: false,
+      ownerDomain: 'theroadtlv.com',
+      expectNoDetectors: ['D5'],
+      raw: [
+        'Delivered-To: recipient@example.com',
+        'Message-ID: <abc123@geopod-ismtpd-7>',
+        'Date: Thu, 08 Oct 2026 14:00:00 +0000',
+        'Subject: Webinar: The Hidden Impact of a "Small" Hardware Change',
+        'From: Jibi Thomas <jibi.thomas@rndsquare.co>',
+        'To: recipient@example.com',
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        '<html><body>',
+        '<a href="https://u123.ct.sendgrid.net/ls/click?upn=u001.AbCdEf">rndsquare.com</a>',
+        '</body></html>',
+      ].join('\n'),
+    },
+
+    // ========================================================================
     // Fixture #6 — a Klaviyo order confirmation, the ecommerce-ESP shape.
     //
     // Received 2026-09-05. Message-ID, Date, Subject and From verbatim; the
