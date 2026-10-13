@@ -594,6 +594,11 @@ function testDetection() {
       expectSpoof: false,
     },
     {
+      name: 'D1 negative: Notion form receipt from mail.notion.com',
+      from: '"Notion Team" <notify@mail.notion.com>',
+      expectSpoof: false,
+    },
+    {
       name: 'D1 negative: "Notice" must not fuzzy-match notion.so',
       from: '"Important Notice" <billing@fa-netscher.de>',
       expectSpoof: false,

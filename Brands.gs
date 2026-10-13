@@ -62,6 +62,7 @@ const BRAND_GROUPS = [
   ['amazon.com', 'amazonaws.com'],
   ['openai.com', 'chatgpt.com'],
   ['docusign.com', 'docusign.net'],
+  ['notion.so', 'notion.com'],
 ];
 
 /**
